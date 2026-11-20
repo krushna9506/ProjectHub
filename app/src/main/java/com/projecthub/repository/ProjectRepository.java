@@ -1,0 +1,197 @@
+package com.projecthub.repository;
+
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.projecthub.models.FileReference;
+import com.projecthub.models.Milestone;
+import com.projecthub.models.Project;
+import com.projecthub.models.Task;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ProjectRepository {
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    public interface OperationCallback {
+        void onSuccess();
+        void onError(String message);
+    }
+
+    public LiveData<List<Project>> getUserProjects(String userId) {
+        MutableLiveData<List<Project>> projectsLiveData = new MutableLiveData<>();
+        
+        // Listen to projects where user is a member
+        db.collection("projects")
+            .whereGreaterThan("members." + userId, "")
+            .addSnapshotListener((snapshots, error) -> {
+                if (error != null) {
+                    projectsLiveData.setValue(new ArrayList<>());
+                    return;
+                }
+                if (snapshots != null) {
+                    List<Project> list = snapshots.toObjects(Project.class);
+                    projectsLiveData.setValue(list);
+                }
+            });
+
+        return projectsLiveData;
+    }
+
+    public void createProject(Project project, OperationCallback callback) {
+        DocumentReference docRef = db.collection("projects").document();
+        project.setProjectId(docRef.getId());
+
+        docRef.set(project)
+            .addOnSuccessListener(aVoid -> {
+                // Also add to user's joined projects array
+                db.collection("users").document(project.getLeadId())
+                    .update("joinedProjectIds", FieldValue.arrayUnion(project.getProjectId()));
+                callback.onSuccess();
+            })
+            .addOnFailureListener(e -> callback.onError("Failed to create project: " + e.getMessage()));
+    }
+
+    public void joinProjectWithCode(String userId, String joinCode, OperationCallback callback) {
+        db.collection("projects")
+            .whereEqualTo("joinCode", joinCode.trim().toUpperCase())
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                if (querySnapshot.isEmpty()) {
+                    callback.onError("Invalid project code. Please check and try again.");
+                    return;
+                }
+
+                DocumentReference projectRef = querySnapshot.getDocuments().get(0).getReference();
+                String projectId = projectRef.getId();
+
+                projectRef.update("members." + userId, "MEMBER")
+                    .addOnSuccessListener(aVoid -> {
+                        db.collection("users").document(userId)
+                            .update("joinedProjectIds", FieldValue.arrayUnion(projectId));
+                        callback.onSuccess();
+                    })
+                    .addOnFailureListener(e -> callback.onError("Failed to join: " + e.getMessage()));
+            })
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public LiveData<List<Task>> getProjectTasks(String projectId) {
+        MutableLiveData<List<Task>> tasksLiveData = new MutableLiveData<>();
+
+        db.collection("projects").document(projectId).collection("tasks")
+            .addSnapshotListener((snapshots, error) -> {
+                if (snapshots != null) {
+                    tasksLiveData.setValue(snapshots.toObjects(Task.class));
+                }
+            });
+
+        return tasksLiveData;
+    }
+
+    public void addTask(String projectId, Task task, OperationCallback callback) {
+        DocumentReference docRef = db.collection("projects").document(projectId)
+            .collection("tasks").document();
+        task.setTaskId(docRef.getId());
+        task.setProjectId(projectId);
+
+        docRef.set(task)
+            .addOnSuccessListener(aVoid -> {
+                recalculateProgress(projectId);
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+    }
+
+    public void updateTaskStatus(String projectId, String taskId, String newStatus) {
+        db.collection("projects").document(projectId)
+            .collection("tasks").document(taskId)
+            .update("status", newStatus)
+            .addOnSuccessListener(aVoid -> recalculateProgress(projectId));
+    }
+
+    public LiveData<List<Milestone>> getProjectMilestones(String projectId) {
+        MutableLiveData<List<Milestone>> milestonesLiveData = new MutableLiveData<>();
+
+        db.collection("projects").document(projectId).collection("milestones")
+            .orderBy("dueDate", Query.Direction.ASCENDING)
+            .addSnapshotListener((snapshots, error) -> {
+                if (snapshots != null) {
+                    milestonesLiveData.setValue(snapshots.toObjects(Milestone.class));
+                }
+            });
+
+        return milestonesLiveData;
+    }
+
+    public void addMilestone(String projectId, Milestone milestone, OperationCallback callback) {
+        DocumentReference docRef = db.collection("projects").document(projectId)
+            .collection("milestones").document();
+        milestone.setMilestoneId(docRef.getId());
+        milestone.setProjectId(projectId);
+
+        docRef.set(milestone)
+            .addOnSuccessListener(aVoid -> {
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+    }
+
+    public LiveData<List<FileReference>> getProjectFiles(String projectId) {
+        MutableLiveData<List<FileReference>> filesLiveData = new MutableLiveData<>();
+
+        db.collection("projects").document(projectId).collection("files")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener((snapshots, error) -> {
+                if (snapshots != null) {
+                    filesLiveData.setValue(snapshots.toObjects(FileReference.class));
+                }
+            });
+
+        return filesLiveData;
+    }
+
+    public void addFileReference(String projectId, FileReference fileRef, OperationCallback callback) {
+        DocumentReference docRef = db.collection("projects").document(projectId)
+            .collection("files").document();
+        fileRef.setFileId(docRef.getId());
+        fileRef.setProjectId(projectId);
+
+        docRef.set(fileRef)
+            .addOnSuccessListener(aVoid -> {
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+    }
+
+    private void recalculateProgress(String projectId) {
+        db.collection("projects").document(projectId).collection("tasks").get()
+            .addOnSuccessListener(querySnapshot -> {
+                if (querySnapshot == null || querySnapshot.isEmpty()) {
+                    db.collection("projects").document(projectId).update("progressPercentage", 0);
+                    return;
+                }
+                int total = querySnapshot.size();
+                int done = 0;
+                for (Task t : querySnapshot.toObjects(Task.class)) {
+                    if ("DONE".equalsIgnoreCase(t.getStatus())) {
+                        done++;
+                    }
+                }
+                int percentage = (int) (((double) done / total) * 100);
+                db.collection("projects").document(projectId).update("progressPercentage", percentage);
+            });
+    }
+}

@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">ProjectHub</string>
+    <string name="tagline">Smart Student Project Collaboration</string>
+    <string name="login">Log In</string>
+    <string name="register">Register</string>
+    <string name="email">Email Address</string>
+    <string name="password">Password</string>
+    <string name="full_name">Full Name</string>
+    <string name="department">Department</string>
+    <string name="roll_number">Roll / Student ID</string>
+    <string name="dont_have_account">Don\'t have an account? Sign Up</string>
+    <string name="already_have_account">Already have an account? Sign In</string>
+    <string name="create_project">Create New Project</string>
+    <string name="join_project">Join Project with Code</string>
+    <string name="project_title">Project Title</string>
+    <string name="project_desc">Project Description</string>
+    <string name="enter_code">Enter 6-char Code</string>
+    <string name="join">Join</string>
+    <string name="create">Create</string>
+    <string name="my_projects">My Projects</string>
+    <string name="tasks">Tasks</string>
+    <string name="milestones">Milestones</string>
+    <string name="files">Files &amp; Links</string>
+    <string name="add_task">Add Task</string>
+    <string name="add_milestone">Add Milestone</string>
+    <string name="add_file">Upload File / Link</string>
+    <string name="todo">TO DO</string>
+    <string name="in_progress">IN PROGRESS</string>
+    <string name="done">DONE</string>
+    <string name="logout">Log Out</string>
+</resources>

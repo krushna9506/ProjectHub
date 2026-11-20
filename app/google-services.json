@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1014367086726",
+    "project_id": "projecthub-209e7",
+    "storage_bucket": "projecthub-209e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1014367086726:android:6036d58d3d3249e234c907",
+        "android_client_info": {
+          "package_name": "com.projecthub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1014367086726-ci9t21l5c08lmk0v4ovef63gadkqbr1h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRxTyN2_CfH-ktn8eNFPmsEjpGJ9y5ycs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1014367086726-ci9t21l5c08lmk0v4ovef63gadkqbr1h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
