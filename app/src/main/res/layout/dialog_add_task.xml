@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New Team Task"
+        android:text="New Agile Issue / Task"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/primary" />
@@ -24,7 +24,7 @@
             android:id="@+id/etTaskTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Task Title (e.g. Design Login UI)" />
+            android:hint="Issue Title (e.g. Design Login UI)" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -52,14 +52,62 @@
             android:id="@+id/etAssignee"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Assigned Member Name" />
+            android:hint="Assigned Member Name (or leave unassigned)" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Issue Type Selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Issue Type"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="14dp" />
+
+    <RadioGroup
+        android:id="@+id/rgIssueType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <RadioButton
+            android:id="@+id/rbTypeTask"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Task"
+            android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbTypeFeature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Feature"
+            android:layout_marginStart="8dp" />
+
+        <RadioButton
+            android:id="@+id/rbTypeBug"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bug"
+            android:layout_marginStart="8dp" />
+
+        <RadioButton
+            android:id="@+id/rbTypeDoc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Doc"
+            android:layout_marginStart="8dp" />
+    </RadioGroup>
+
+    <!-- Priority Selector -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Priority"
-        android:textSize="14sp"
+        android:textSize="13sp"
+        android:textStyle="bold"
         android:textColor="@color/text_secondary"
         android:layout_marginTop="12dp" />
 
@@ -82,13 +130,21 @@
             android:layout_height="wrap_content"
             android:text="Medium"
             android:checked="true"
-            android:layout_marginStart="16dp" />
+            android:layout_marginStart="8dp" />
 
         <RadioButton
             android:id="@+id/rbHigh"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="High"
-            android:layout_marginStart="16dp" />
+            android:layout_marginStart="8dp" />
+
+        <RadioButton
+            android:id="@+id/rbUrgent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Urgent"
+            android:layout_marginStart="8dp" />
     </RadioGroup>
+
 </LinearLayout>

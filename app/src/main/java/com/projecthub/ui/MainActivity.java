@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvGreeting, tvStudentInfo, tvEmptyProjects;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
-    private MaterialButton btnCreateProject, btnJoinProject;
+    private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
     private ImageButton btnLogout;
 
     @Override
@@ -46,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
         rvProjects = findViewById(R.id.rvProjects);
         btnCreateProject = findViewById(R.id.btnCreateProject);
         btnJoinProject = findViewById(R.id.btnJoinProject);
+        btnExploreCampus = findViewById(R.id.btnExploreCampus);
+        btnManageRequests = findViewById(R.id.btnManageRequests);
         btnLogout = findViewById(R.id.btnLogout);
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
@@ -83,6 +85,14 @@ public class MainActivity extends AppCompatActivity {
 
         btnCreateProject.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, CreateProjectActivity.class));
+        });
+
+        btnExploreCampus.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, ExploreActivity.class));
+        });
+
+        btnManageRequests.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, ManageRequestsActivity.class));
         });
 
         btnJoinProject.setOnClickListener(v -> showJoinProjectDialog());

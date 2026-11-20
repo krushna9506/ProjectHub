@@ -10,11 +10,29 @@
     <color name="text_secondary">#757575</color>
     <color name="divider">#E0E0E0</color>
 
-    <!-- Priority & Status Colors -->
-    <color name="priority_high">#E53935</color>
+    <!-- Priority Colors -->
+    <color name="priority_urgent">#D32F2F</color>
+    <color name="priority_high">#E65100</color>
     <color name="priority_medium">#FB8C00</color>
     <color name="priority_low">#43A047</color>
-    <color name="status_done">#2E7D32</color>
-    <color name="status_progress">#1976D2</color>
+
+    <!-- Status Colors -->
     <color name="status_todo">#757575</color>
+    <color name="status_todo_bg">#EEEEEE</color>
+    <color name="status_progress">#1976D2</color>
+    <color name="status_progress_bg">#E3F2FD</color>
+    <color name="status_review">#7B1FA2</color>
+    <color name="status_review_bg">#F3E5F5</color>
+    <color name="status_done">#2E7D32</color>
+    <color name="status_done_bg">#E8F5E9</color>
+
+    <!-- Jira Issue Type Colors -->
+    <color name="issue_bug">#D32F2F</color>
+    <color name="issue_bug_bg">#FFEBEE</color>
+    <color name="issue_feature">#7B1FA2</color>
+    <color name="issue_feature_bg">#F3E5F5</color>
+    <color name="issue_task">#1976D2</color>
+    <color name="issue_task_bg">#E3F2FD</color>
+    <color name="issue_doc">#00796B</color>
+    <color name="issue_doc_bg">#E0F2F1</color>
 </resources>

@@ -14,6 +14,10 @@ public class Project {
     private int progressPercentage;
     private long createdAt;
     private long deadline;
+    private boolean isPublic;
+    private String category;   // e.g. "SIH Hackathon", "Capstone", "Research", "Side Project"
+    private String lookingFor; // e.g. "Android Dev, UI/UX Designer"
+    private String collegeDomain;
 
     public Project() {
         this.members = new HashMap<>();
@@ -32,6 +36,10 @@ public class Project {
         this.progressPercentage = 0;
         this.createdAt = System.currentTimeMillis();
         this.deadline = deadline;
+        this.isPublic = false;
+        this.category = "General";
+        this.lookingFor = "";
+        this.collegeDomain = "";
     }
 
     public String getProjectId() { return projectId; }
@@ -63,4 +71,16 @@ public class Project {
 
     public long getDeadline() { return deadline; }
     public void setDeadline(long deadline) { this.deadline = deadline; }
+
+    public boolean isPublic() { return isPublic; }
+    public void setPublic(boolean aPublic) { isPublic = aPublic; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getLookingFor() { return lookingFor; }
+    public void setLookingFor(String lookingFor) { this.lookingFor = lookingFor; }
+
+    public String getCollegeDomain() { return collegeDomain; }
+    public void setCollegeDomain(String collegeDomain) { this.collegeDomain = collegeDomain; }
 }

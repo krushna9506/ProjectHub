@@ -42,6 +42,18 @@
             android:name=".ui.ProjectDetailsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.TaskDetailsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.ExploreActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.ManageRequestsActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -6,13 +6,16 @@ import androidx.lifecycle.ViewModel;
 
 import com.projecthub.models.FileReference;
 import com.projecthub.models.Milestone;
+import com.projecthub.models.Project;
 import com.projecthub.models.Task;
+import com.projecthub.models.TaskComment;
 import com.projecthub.repository.ProjectRepository;
 
 import java.util.List;
 
 public class ProjectDetailsViewModel extends ViewModel {
     private final ProjectRepository repository = new ProjectRepository();
+    private LiveData<Project> project;
     private LiveData<List<Task>> tasks;
     private LiveData<List<Milestone>> milestones;
     private LiveData<List<FileReference>> files;
@@ -22,12 +25,14 @@ public class ProjectDetailsViewModel extends ViewModel {
 
     public void init(String projectId) {
         if (tasks == null) {
+            project = repository.getProject(projectId);
             tasks = repository.getProjectTasks(projectId);
             milestones = repository.getProjectMilestones(projectId);
             files = repository.getProjectFiles(projectId);
         }
     }
 
+    public LiveData<Project> getProject() { return project; }
     public LiveData<List<Task>> getTasks() { return tasks; }
     public LiveData<List<Milestone>> getMilestones() { return milestones; }
     public LiveData<List<FileReference>> getFiles() { return files; }
@@ -48,6 +53,28 @@ public class ProjectDetailsViewModel extends ViewModel {
 
     public void updateTaskStatus(String projectId, String taskId, String newStatus) {
         repository.updateTaskStatus(projectId, taskId, newStatus);
+    }
+
+    public void updateMilestoneStatus(String projectId, String milestoneId, String newStatus) {
+        repository.updateMilestoneStatus(projectId, milestoneId, newStatus);
+    }
+
+    public LiveData<List<TaskComment>> getTaskComments(String projectId, String taskId) {
+        return repository.getTaskComments(projectId, taskId);
+    }
+
+    public void addTaskComment(String projectId, String taskId, TaskComment comment) {
+        repository.addTaskComment(projectId, taskId, comment, new ProjectRepository.OperationCallback() {
+            @Override
+            public void onSuccess() {
+                actionMessage.setValue("Comment posted");
+            }
+
+            @Override
+            public void onError(String message) {
+                actionMessage.setValue("Failed to post comment: " + message);
+            }
+        });
     }
 
     public void addMilestone(String projectId, Milestone milestone) {

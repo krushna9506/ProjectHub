@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -16,20 +17,29 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.projecthub.R;
 import com.projecthub.adapters.FileAdapter;
 import com.projecthub.adapters.MilestoneAdapter;
 import com.projecthub.adapters.TaskAdapter;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.Milestone;
+import com.projecthub.models.Project;
 import com.projecthub.models.Task;
 import com.projecthub.viewmodel.ProjectDetailsViewModel;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class ProjectDetailsActivity extends AppCompatActivity {
 
@@ -41,11 +51,31 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     private TextView tvTitle, tvDesc, tvJoinCode, tvOverallProgress, tvEmptyState;
     private ProgressBar pbOverallProgress;
     private TabLayout tabLayout;
+
+    // Tab Containers
+    private View layoutKanban, layoutRoadmap, layoutAnalytics;
     private RecyclerView rvTasks, rvMilestones, rvFiles;
     private ExtendedFloatingActionButton fabAction;
 
+    // Kanban Filter Chips
+    private ChipGroup chipGroupFilters;
+
+    // Countdown / Sprint Widget Views
+    private TextView tvCountdownCategory, tvCountdownDays, tvCountdownTargetDate, tvMilestonesRatio;
+    private ProgressBar pbMilestonesRoadmap;
+
+    // Analytics Views
+    private TextView tvCountTodo, tvCountInProgress, tvCountInReview, tvCountDone;
+    private TextView tvStatFeatures, tvStatBugs, tvStatTasks, tvStatDocs;
+    private LinearLayout layoutMemberWorkload;
+
     private String projectId, projectTitle, projectDesc, projectCode;
-    private int currentTab = 0; // 0 = Tasks, 1 = Milestones, 2 = Files
+    private long projectDeadline = 0;
+    private int currentTab = 0; // 0 = Kanban, 1 = Roadmap, 2 = Files, 3 = Analytics
+
+    private List<Task> allTasks = new ArrayList<>();
+    private List<Milestone> allMilestones = new ArrayList<>();
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,25 +86,12 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         projectTitle = getIntent().getStringExtra("PROJECT_TITLE");
         projectDesc = getIntent().getStringExtra("PROJECT_DESC");
         projectCode = getIntent().getStringExtra("PROJECT_CODE");
+        projectDeadline = getIntent().getLongExtra("PROJECT_DEADLINE", 0);
 
-        tvTitle = findViewById(R.id.tvProjectTitle);
-        tvDesc = findViewById(R.id.tvProjectDesc);
-        tvJoinCode = findViewById(R.id.tvProjectJoinCode);
-        tvOverallProgress = findViewById(R.id.tvOverallProgress);
-        tvEmptyState = findViewById(R.id.tvEmptyState);
-        pbOverallProgress = findViewById(R.id.pbOverallProgress);
-        tabLayout = findViewById(R.id.tabLayout);
-        rvTasks = findViewById(R.id.rvTasks);
-        rvMilestones = findViewById(R.id.rvMilestones);
-        rvFiles = findViewById(R.id.rvFiles);
-        fabAction = findViewById(R.id.fabAction);
-
-        tvTitle.setText(projectTitle);
-        tvDesc.setText(projectDesc);
-        tvJoinCode.setText("Code: " + projectCode);
-
+        initViews();
         setupTabs();
         setupRecyclerViews();
+        setupFilterChips();
 
         viewModel = new ViewModelProvider(this).get(ProjectDetailsViewModel.class);
         viewModel.init(projectId);
@@ -86,16 +103,62 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                 showAddTaskDialog();
             } else if (currentTab == 1) {
                 showAddMilestoneDialog();
-            } else {
+            } else if (currentTab == 2) {
                 showAddFileDialog();
             }
         });
     }
 
+    private void initViews() {
+        tvTitle = findViewById(R.id.tvProjectTitle);
+        tvDesc = findViewById(R.id.tvProjectDesc);
+        tvJoinCode = findViewById(R.id.tvProjectJoinCode);
+        tvOverallProgress = findViewById(R.id.tvOverallProgress);
+        tvEmptyState = findViewById(R.id.tvEmptyState);
+        pbOverallProgress = findViewById(R.id.pbOverallProgress);
+        tabLayout = findViewById(R.id.tabLayout);
+
+        layoutKanban = findViewById(R.id.layoutKanban);
+        layoutRoadmap = findViewById(R.id.layoutRoadmap);
+        layoutAnalytics = findViewById(R.id.layoutAnalytics);
+
+        rvTasks = findViewById(R.id.rvTasks);
+        rvMilestones = findViewById(R.id.rvMilestones);
+        rvFiles = findViewById(R.id.rvFiles);
+        fabAction = findViewById(R.id.fabAction);
+
+        chipGroupFilters = findViewById(R.id.chipGroupFilters);
+
+        // Countdown widget
+        tvCountdownCategory = findViewById(R.id.tvCountdownCategory);
+        tvCountdownDays = findViewById(R.id.tvCountdownDays);
+        tvCountdownTargetDate = findViewById(R.id.tvCountdownTargetDate);
+        pbMilestonesRoadmap = findViewById(R.id.pbMilestonesRoadmap);
+        tvMilestonesRatio = findViewById(R.id.tvMilestonesRatio);
+
+        // Analytics
+        tvCountTodo = findViewById(R.id.tvCountTodo);
+        tvCountInProgress = findViewById(R.id.tvCountInProgress);
+        tvCountInReview = findViewById(R.id.tvCountInReview);
+        tvCountDone = findViewById(R.id.tvCountDone);
+
+        tvStatFeatures = findViewById(R.id.tvStatFeatures);
+        tvStatBugs = findViewById(R.id.tvStatBugs);
+        tvStatTasks = findViewById(R.id.tvStatTasks);
+        tvStatDocs = findViewById(R.id.tvStatDocs);
+
+        layoutMemberWorkload = findViewById(R.id.layoutMemberWorkload);
+
+        tvTitle.setText(projectTitle != null ? projectTitle : "Project");
+        tvDesc.setText(projectDesc != null ? projectDesc : "");
+        tvJoinCode.setText("Code: " + (projectCode != null ? projectCode : ""));
+    }
+
     private void setupTabs() {
-        tabLayout.addTab(tabLayout.newTab().setText("Tasks"));
-        tabLayout.addTab(tabLayout.newTab().setText("Milestones"));
+        tabLayout.addTab(tabLayout.newTab().setText("Kanban Board"));
+        tabLayout.addTab(tabLayout.newTab().setText("Roadmap & Sprints"));
         tabLayout.addTab(tabLayout.newTab().setText("Files & Links"));
+        tabLayout.addTab(tabLayout.newTab().setText("Agile Analytics"));
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -111,36 +174,50 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     }
 
     private void updateTabVisibility() {
-        rvTasks.setVisibility(currentTab == 0 ? View.VISIBLE : View.GONE);
-        rvMilestones.setVisibility(currentTab == 1 ? View.VISIBLE : View.GONE);
+        layoutKanban.setVisibility(currentTab == 0 ? View.VISIBLE : View.GONE);
+        layoutRoadmap.setVisibility(currentTab == 1 ? View.VISIBLE : View.GONE);
         rvFiles.setVisibility(currentTab == 2 ? View.VISIBLE : View.GONE);
+        layoutAnalytics.setVisibility(currentTab == 3 ? View.VISIBLE : View.GONE);
 
         if (currentTab == 0) {
-            fabAction.setText("Add Task");
+            fabAction.show();
+            fabAction.setText("Add Issue");
             checkEmptyState(taskAdapter.getItemCount());
         } else if (currentTab == 1) {
+            fabAction.show();
             fabAction.setText("Add Milestone");
             checkEmptyState(milestoneAdapter.getItemCount());
-        } else {
+        } else if (currentTab == 2) {
+            fabAction.show();
             fabAction.setText("Add Resource");
             checkEmptyState(fileAdapter.getItemCount());
+        } else {
+            fabAction.hide();
+            tvEmptyState.setVisibility(View.GONE);
         }
     }
 
     private void checkEmptyState(int count) {
+        if (currentTab == 3) {
+            tvEmptyState.setVisibility(View.GONE);
+            return;
+        }
         tvEmptyState.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
     }
 
     private void setupRecyclerViews() {
-        // Tasks
-        taskAdapter = new TaskAdapter((task, newStatus) -> {
-            viewModel.updateTaskStatus(projectId, task.getTaskId(), newStatus);
-        });
+        // Kanban Tasks
+        taskAdapter = new TaskAdapter(
+            (task, newStatus) -> viewModel.updateTaskStatus(projectId, task.getTaskId(), newStatus),
+            task -> openTaskDetails(task)
+        );
         rvTasks.setLayoutManager(new LinearLayoutManager(this));
         rvTasks.setAdapter(taskAdapter);
 
-        // Milestones
-        milestoneAdapter = new MilestoneAdapter();
+        // Roadmap Milestones
+        milestoneAdapter = new MilestoneAdapter((milestone, newStatus) -> {
+            viewModel.updateMilestoneStatus(projectId, milestone.getMilestoneId(), newStatus);
+        });
         rvMilestones.setLayoutManager(new LinearLayoutManager(this));
         rvMilestones.setAdapter(milestoneAdapter);
 
@@ -159,18 +236,96 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         rvFiles.setAdapter(fileAdapter);
     }
 
+    private void setupFilterChips() {
+        chipGroupFilters.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) return;
+            filterTasks(checkedIds.get(0));
+        });
+    }
+
+    private void filterTasks(int checkedChipId) {
+        if (allTasks == null) return;
+        List<Task> filtered = new ArrayList<>();
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentEmail = currentUser != null && currentUser.getEmail() != null ? 
+            currentUser.getEmail().split("@")[0].toLowerCase() : "";
+
+        for (Task t : allTasks) {
+            String status = t.getStatus() != null ? t.getStatus() : "TODO";
+            String issueType = t.getIssueType() != null ? t.getIssueType() : "TASK";
+            String assignee = t.getAssignedToName() != null ? t.getAssignedToName().toLowerCase() : "";
+
+            if (checkedChipId == R.id.chipFilterMyTasks) {
+                if (!currentEmail.isEmpty() && (assignee.contains(currentEmail) || currentEmail.contains(assignee))) {
+                    filtered.add(t);
+                }
+            } else if (checkedChipId == R.id.chipFilterTodo) {
+                if ("TODO".equalsIgnoreCase(status)) filtered.add(t);
+            } else if (checkedChipId == R.id.chipFilterProgress) {
+                if ("IN_PROGRESS".equalsIgnoreCase(status)) filtered.add(t);
+            } else if (checkedChipId == R.id.chipFilterReview) {
+                if ("IN_REVIEW".equalsIgnoreCase(status)) filtered.add(t);
+            } else if (checkedChipId == R.id.chipFilterDone) {
+                if ("DONE".equalsIgnoreCase(status)) filtered.add(t);
+            } else if (checkedChipId == R.id.chipFilterBugs) {
+                if ("BUG".equalsIgnoreCase(issueType)) filtered.add(t);
+            } else {
+                // All Tasks
+                filtered.add(t);
+            }
+        }
+
+        taskAdapter.setTasks(filtered);
+        if (currentTab == 0) checkEmptyState(filtered.size());
+    }
+
+    private void openTaskDetails(Task task) {
+        Intent intent = new Intent(this, TaskDetailsActivity.class);
+        intent.putExtra("PROJECT_ID", projectId);
+        intent.putExtra("TASK_ID", task.getTaskId());
+        intent.putExtra("TASK_TITLE", task.getTitle());
+        intent.putExtra("TASK_DESC", task.getDescription());
+        intent.putExtra("TASK_STATUS", task.getStatus());
+        intent.putExtra("TASK_PRIORITY", task.getPriority());
+        intent.putExtra("TASK_ISSUE_TYPE", task.getIssueType());
+        intent.putExtra("TASK_ASSIGNEE", task.getAssignedToName());
+        intent.putExtra("TASK_DUE_DATE", task.getDueDate());
+        startActivity(intent);
+    }
+
     private void observeData() {
+        // Project details (deadline, category, etc.)
+        viewModel.getProject().observe(this, project -> {
+            if (project != null) {
+                if (project.getTitle() != null) tvTitle.setText(project.getTitle());
+                if (project.getDescription() != null) tvDesc.setText(project.getDescription());
+                projectDeadline = project.getDeadline();
+                updateCountdownWidget(project);
+            }
+        });
+
+        // Tasks
         viewModel.getTasks().observe(this, tasks -> {
-            taskAdapter.setTasks(tasks);
-            updateProgress(tasks);
-            if (currentTab == 0) checkEmptyState(tasks.size());
+            allTasks = tasks != null ? tasks : new ArrayList<>();
+            // Reapply current chip filter
+            int checkedId = chipGroupFilters.getCheckedChipId();
+            if (checkedId == View.NO_ID) checkedId = R.id.chipFilterAll;
+            filterTasks(checkedId);
+
+            updateOverallProgress(allTasks);
+            updateAnalytics(allTasks);
         });
 
+        // Milestones
         viewModel.getMilestones().observe(this, milestones -> {
-            milestoneAdapter.setMilestones(milestones);
-            if (currentTab == 1) checkEmptyState(milestones.size());
+            allMilestones = milestones != null ? milestones : new ArrayList<>();
+            milestoneAdapter.setMilestones(allMilestones);
+            updateMilestonesRatio(allMilestones);
+            if (currentTab == 1) checkEmptyState(allMilestones.size());
         });
 
+        // Files
         viewModel.getFiles().observe(this, files -> {
             fileAdapter.setFiles(files);
             if (currentTab == 2) checkEmptyState(files.size());
@@ -181,7 +336,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         });
     }
 
-    private void updateProgress(List<Task> tasks) {
+    private void updateOverallProgress(List<Task> tasks) {
         if (tasks == null || tasks.isEmpty()) {
             pbOverallProgress.setProgress(0);
             tvOverallProgress.setText("0%");
@@ -198,16 +353,125 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tvOverallProgress.setText(percent + "% Completed (" + completed + "/" + tasks.size() + ")");
     }
 
+    private void updateCountdownWidget(Project project) {
+        String category = project.getCategory() != null ? project.getCategory() : "AGILE SPRINT";
+        tvCountdownCategory.setText(category.toUpperCase(Locale.getDefault()) + " ROADMAP");
+
+        long deadline = project.getDeadline();
+        if (deadline > 0) {
+            tvCountdownTargetDate.setText("Sprint Target: " + dateFormat.format(new Date(deadline)));
+
+            long diff = deadline - System.currentTimeMillis();
+            if (diff > 0) {
+                long days = diff / (1000 * 60 * 60 * 24);
+                long hours = (diff / (1000 * 60 * 60)) % 24;
+                if (days > 0) {
+                    tvCountdownDays.setText("⏳ " + days + "d " + hours + "h Remaining");
+                } else {
+                    tvCountdownDays.setText("⏳ " + hours + " Hours Left!");
+                }
+            } else {
+                tvCountdownDays.setText("⚠️ Deadline Passed");
+            }
+        } else {
+            tvCountdownDays.setText("⚡ Active Sprint");
+            tvCountdownTargetDate.setText("Continuous Agile Delivery");
+        }
+    }
+
+    private void updateMilestonesRatio(List<Milestone> milestones) {
+        if (milestones == null || milestones.isEmpty()) {
+            pbMilestonesRoadmap.setProgress(0);
+            tvMilestonesRatio.setText("0 Milestones tracked");
+            return;
+        }
+        int completed = 0;
+        for (Milestone m : milestones) {
+            if ("COMPLETED".equalsIgnoreCase(m.getStatus()) || "DONE".equalsIgnoreCase(m.getStatus())) {
+                completed++;
+            }
+        }
+        int percent = (int) (((double) completed / milestones.size()) * 100);
+        pbMilestonesRoadmap.setProgress(percent);
+        tvMilestonesRatio.setText(completed + " of " + milestones.size() + " Milestones Achieved (" + percent + "%)");
+    }
+
+    private void updateAnalytics(List<Task> tasks) {
+        int todo = 0, progress = 0, review = 0, done = 0;
+        int features = 0, bugs = 0, taskCount = 0, docs = 0;
+        Map<String, Integer> memberTaskCount = new HashMap<>();
+
+        for (Task t : tasks) {
+            String status = t.getStatus() != null ? t.getStatus() : "TODO";
+            if ("DONE".equalsIgnoreCase(status)) done++;
+            else if ("IN_REVIEW".equalsIgnoreCase(status)) review++;
+            else if ("IN_PROGRESS".equalsIgnoreCase(status)) progress++;
+            else todo++;
+
+            String type = t.getIssueType() != null ? t.getIssueType() : "TASK";
+            if ("BUG".equalsIgnoreCase(type)) bugs++;
+            else if ("FEATURE".equalsIgnoreCase(type)) features++;
+            else if ("DOCUMENTATION".equalsIgnoreCase(type) || "DOC".equalsIgnoreCase(type)) docs++;
+            else taskCount++;
+
+            String assignee = t.getAssignedToName() != null && !t.getAssignedToName().isEmpty() ? 
+                t.getAssignedToName() : "Unassigned";
+            memberTaskCount.put(assignee, memberTaskCount.getOrDefault(assignee, 0) + 1);
+        }
+
+        tvCountTodo.setText(String.valueOf(todo));
+        tvCountInProgress.setText(String.valueOf(progress));
+        tvCountInReview.setText(String.valueOf(review));
+        tvCountDone.setText(String.valueOf(done));
+
+        tvStatFeatures.setText("✨ Features: " + features);
+        tvStatBugs.setText("🐞 Bugs: " + bugs);
+        tvStatTasks.setText("📋 Tasks: " + taskCount);
+        tvStatDocs.setText("📄 Docs: " + docs);
+
+        // Render Member Workload
+        layoutMemberWorkload.removeAllViews();
+        if (memberTaskCount.isEmpty()) {
+            TextView tvNone = new TextView(this);
+            tvNone.setText("No tasks currently assigned to members.");
+            tvNone.setTextColor(getColor(R.color.text_secondary));
+            tvNone.setTextSize(13);
+            layoutMemberWorkload.addView(tvNone);
+        } else {
+            for (Map.Entry<String, Integer> entry : memberTaskCount.entrySet()) {
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setPadding(0, 8, 0, 8);
+
+                TextView tvName = new TextView(this);
+                tvName.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+                tvName.setText("👤 " + entry.getKey());
+                tvName.setTextColor(getColor(R.color.text_primary));
+                tvName.setTextSize(13);
+
+                TextView tvCount = new TextView(this);
+                tvCount.setText(entry.getValue() + (entry.getValue() == 1 ? " task" : " tasks"));
+                tvCount.setTextColor(getColor(R.color.primary));
+                tvCount.setTextSize(13);
+
+                row.addView(tvName);
+                row.addView(tvCount);
+                layoutMemberWorkload.addView(row);
+            }
+        }
+    }
+
     private void showAddTaskDialog() {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_task, null);
         TextInputEditText etTitle = view.findViewById(R.id.etTaskTitle);
         TextInputEditText etDesc = view.findViewById(R.id.etTaskDesc);
         TextInputEditText etAssignee = view.findViewById(R.id.etAssignee);
+        RadioGroup rgIssueType = view.findViewById(R.id.rgIssueType);
         RadioGroup rgPriority = view.findViewById(R.id.rgPriority);
 
         new AlertDialog.Builder(this)
             .setView(view)
-            .setPositiveButton("Create Task", (dialog, which) -> {
+            .setPositiveButton("Create Issue", (dialog, which) -> {
                 String title = etTitle.getText() != null ? etTitle.getText().toString().trim() : "";
                 String desc = etDesc.getText() != null ? etDesc.getText().toString().trim() : "";
                 String assignee = etAssignee.getText() != null ? etAssignee.getText().toString().trim() : "";
@@ -217,12 +481,24 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     return;
                 }
 
-                String priority = "MEDIUM";
-                int checkedId = rgPriority.getCheckedRadioButtonId();
-                if (checkedId == R.id.rbLow) priority = "LOW";
-                else if (checkedId == R.id.rbHigh) priority = "HIGH";
+                // Determine Issue Type
+                String issueType = "TASK";
+                int checkedTypeId = rgIssueType.getCheckedRadioButtonId();
+                if (checkedTypeId == R.id.rbTypeBug) issueType = "BUG";
+                else if (checkedTypeId == R.id.rbTypeFeature) issueType = "FEATURE";
+                else if (checkedTypeId == R.id.rbTypeDoc) issueType = "DOCUMENTATION";
 
-                Task task = new Task(null, projectId, null, title, desc, "TODO", priority, null, assignee, System.currentTimeMillis() + 86400000L * 7);
+                // Determine Priority
+                String priority = "MEDIUM";
+                int checkedPriId = rgPriority.getCheckedRadioButtonId();
+                if (checkedPriId == R.id.rbLow) priority = "LOW";
+                else if (checkedPriId == R.id.rbHigh) priority = "HIGH";
+                else if (checkedPriId == R.id.rbUrgent) priority = "URGENT";
+
+                Task task = new Task(
+                    null, projectId, null, title, desc, "TODO", priority, issueType, null, assignee, 
+                    System.currentTimeMillis() + 86400000L * 7
+                );
                 viewModel.addTask(projectId, task);
             })
             .setNegativeButton("Cancel", null)

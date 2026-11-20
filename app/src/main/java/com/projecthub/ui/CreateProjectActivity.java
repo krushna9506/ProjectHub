@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.projecthub.R;
@@ -20,7 +21,8 @@ import java.util.Random;
 public class CreateProjectActivity extends AppCompatActivity {
 
     private DashboardViewModel dashboardViewModel;
-    private TextInputEditText etTitle, etDesc, etDeadlineDays;
+    private TextInputEditText etTitle, etDesc, etDeadlineDays, etCategory, etLookingFor;
+    private MaterialSwitch switchPublic;
     private MaterialButton btnSubmitCreate;
     private ProgressBar progressBar;
 
@@ -32,6 +34,9 @@ public class CreateProjectActivity extends AppCompatActivity {
         etTitle = findViewById(R.id.etProjectTitle);
         etDesc = findViewById(R.id.etProjectDesc);
         etDeadlineDays = findViewById(R.id.etDeadlineDays);
+        etCategory = findViewById(R.id.etCategory);
+        etLookingFor = findViewById(R.id.etLookingFor);
+        switchPublic = findViewById(R.id.switchPublic);
         btnSubmitCreate = findViewById(R.id.btnSubmitCreate);
         progressBar = findViewById(R.id.progressBar);
 
@@ -55,6 +60,9 @@ public class CreateProjectActivity extends AppCompatActivity {
             String title = etTitle.getText() != null ? etTitle.getText().toString().trim() : "";
             String desc = etDesc.getText() != null ? etDesc.getText().toString().trim() : "";
             String daysStr = etDeadlineDays.getText() != null ? etDeadlineDays.getText().toString().trim() : "30";
+            String category = etCategory.getText() != null ? etCategory.getText().toString().trim() : "General";
+            String lookingFor = etLookingFor.getText() != null ? etLookingFor.getText().toString().trim() : "";
+            boolean isPublic = switchPublic.isChecked();
 
             if (title.isEmpty() || desc.isEmpty()) {
                 Toast.makeText(this, "Title and description are required", Toast.LENGTH_SHORT).show();
@@ -75,6 +83,17 @@ public class CreateProjectActivity extends AppCompatActivity {
                               FirebaseAuth.getInstance().getCurrentUser().getDisplayName() : "Lead";
 
             Project project = new Project(null, title, desc, joinCode, leadId, leadName, deadline);
+            project.setPublic(isPublic);
+            project.setCategory(category.isEmpty() ? "General" : category);
+            project.setLookingFor(lookingFor);
+
+            String userEmail = FirebaseAuth.getInstance().getCurrentUser() != null && 
+                               FirebaseAuth.getInstance().getCurrentUser().getEmail() != null ?
+                               FirebaseAuth.getInstance().getCurrentUser().getEmail() : "";
+            if (userEmail.contains("@")) {
+                project.setCollegeDomain(userEmail.substring(userEmail.indexOf("@") + 1));
+            }
+
             dashboardViewModel.createProject(project);
         });
     }
