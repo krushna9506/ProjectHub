@@ -220,6 +220,10 @@ public class TaskDetailsActivity extends AppCompatActivity {
                 tvCommentsCountBadge.setText("0 Comments");
             }
         });
+
+        viewModel.getActionMessage().observe(this, msg -> {
+            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void postComment() {

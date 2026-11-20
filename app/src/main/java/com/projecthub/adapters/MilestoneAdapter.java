@@ -69,19 +69,22 @@ public class MilestoneAdapter extends RecyclerView.Adapter<MilestoneAdapter.Mile
             holder.tvNode.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.status_done));
             holder.btnStatus.setText("✓ Done");
             holder.btnStatus.setOnClickListener(v -> {
-                if (listener != null) listener.onStatusChange(milestone, "PENDING");
+                if (listener != null)
+                    listener.onStatusChange(milestone, "PENDING");
             });
         } else if ("IN_PROGRESS".equalsIgnoreCase(status)) {
             holder.tvNode.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.status_progress));
             holder.btnStatus.setText("Complete →");
             holder.btnStatus.setOnClickListener(v -> {
-                if (listener != null) listener.onStatusChange(milestone, "COMPLETED");
+                if (listener != null)
+                    listener.onStatusChange(milestone, "COMPLETED");
             });
         } else {
             holder.tvNode.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.status_todo));
             holder.btnStatus.setText("Start →");
             holder.btnStatus.setOnClickListener(v -> {
-                if (listener != null) listener.onStatusChange(milestone, "IN_PROGRESS");
+                if (listener != null)
+                    listener.onStatusChange(milestone, "IN_PROGRESS");
             });
         }
     }
