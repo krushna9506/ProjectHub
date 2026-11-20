@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.projecthub.models.ChatMessage;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.Milestone;
 import com.projecthub.models.Project;
@@ -19,6 +20,7 @@ public class ProjectDetailsViewModel extends ViewModel {
     private LiveData<List<Task>> tasks;
     private LiveData<List<Milestone>> milestones;
     private LiveData<List<FileReference>> files;
+    private LiveData<List<ChatMessage>> chatMessages;
     private final MutableLiveData<String> actionMessage = new MutableLiveData<>();
 
     public LiveData<String> getActionMessage() { return actionMessage; }
@@ -29,6 +31,7 @@ public class ProjectDetailsViewModel extends ViewModel {
             tasks = repository.getProjectTasks(projectId);
             milestones = repository.getProjectMilestones(projectId);
             files = repository.getProjectFiles(projectId);
+            chatMessages = repository.getProjectChatMessages(projectId);
         }
     }
 
@@ -36,6 +39,15 @@ public class ProjectDetailsViewModel extends ViewModel {
     public LiveData<List<Task>> getTasks() { return tasks; }
     public LiveData<List<Milestone>> getMilestones() { return milestones; }
     public LiveData<List<FileReference>> getFiles() { return files; }
+    public LiveData<List<ChatMessage>> getChatMessages() { return chatMessages; }
+
+    public void sendChatMessage(String projectId, ChatMessage message) {
+        repository.sendChatMessage(projectId, message, null);
+    }
+
+    public void updateProjectGithubUrl(String projectId, String githubUrl) {
+        repository.updateProjectGithubUrl(projectId, githubUrl);
+    }
 
     public void addTask(String projectId, Task task) {
         repository.addTask(projectId, task, new ProjectRepository.OperationCallback() {

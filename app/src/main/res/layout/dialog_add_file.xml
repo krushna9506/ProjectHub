@@ -9,23 +9,40 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Attach File / Reference Link"
+        android:text="Share File, Code or Link"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="@color/primary" />
 
-    <com.google.android.material.textfield.TextInputLayout
+    <!-- Resource Type Selector -->
+    <RadioGroup
+        android:id="@+id/rgResourceType"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etFileName"
-            android:layout_width="match_parent"
+        <RadioButton
+            android:id="@+id/rbTypeLink"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="Resource Name (e.g. GitHub Repo / Figma)" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:text="Link / File"
+            android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbTypeCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Code Snippet"
+            android:layout_marginStart="8dp" />
+
+        <RadioButton
+            android:id="@+id/rbTypeGitHub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GitHub"
+            android:layout_marginStart="8dp" />
+    </RadioGroup>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -34,10 +51,61 @@
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Resource Title (e.g. Firebase Auth Helper / Figma)" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- URL Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilFileUrl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etFileUrl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="URL (e.g. https://github.com/...)"
+            android:hint="Resource URL (e.g. https://...)"
             android:inputType="textUri" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Language Input (for Code Snippets) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilFileLang"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:visibility="gone">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etFileLang"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Language (e.g. Java, Kotlin, Python, XML)" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Code Snippet Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilFileSnippet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:visibility="gone">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etFileSnippet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Paste Code Snippet here..."
+            android:fontFamily="monospace"
+            android:inputType="textMultiLine"
+            android:minLines="3" />
+    </com.google.android.material.textfield.TextInputLayout>
+
 </LinearLayout>

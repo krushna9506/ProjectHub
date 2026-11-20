@@ -16,8 +16,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp">
+            android:paddingTop="14dp"
+            android:paddingBottom="6dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -28,29 +28,47 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
-                    android:layout_toStartOf="@+id/tvProjectJoinCode"
-                    android:textSize="22sp"
+                    android:layout_toStartOf="@+id/layoutTopActions"
+                    android:textSize="21sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
-                <TextView
-                    android:id="@+id/tvProjectJoinCode"
+                <LinearLayout
+                    android:id="@+id/layoutTopActions"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:background="@drawable/bg_code_pill"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLiveCall"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="📹 Meet"
+                        android:textSize="11sp"
+                        android:paddingHorizontal="8dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:id="@+id/tvProjectJoinCode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_code_pill"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary" />
+                </LinearLayout>
             </RelativeLayout>
 
             <TextView
                 android:id="@+id/tvProjectDesc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="3dp"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -59,14 +77,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center_vertical">
 
                 <ProgressBar
                     android:id="@+id/pbOverallProgress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="0dp"
-                    android:layout_height="10dp"
+                    android:layout_height="8dp"
                     android:layout_weight="1"
                     android:max="100"
                     android:progressTint="@color/primary" />
@@ -76,7 +94,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
             </LinearLayout>
@@ -86,7 +104,7 @@
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:tabMode="fixed"
+            app:tabMode="scrollable"
             app:tabSelectedTextColor="@color/primary"
             app:tabIndicatorColor="@color/primary" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -179,7 +197,102 @@
                 android:paddingBottom="80dp" />
         </LinearLayout>
 
-        <!-- Tab 1: Roadmap & Sprint Timeline View -->
+        <!-- Tab 1: Team Chat View -->
+        <LinearLayout
+            android:id="@+id/layoutChat"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Chat Call Action Banner -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"
+                app:cardCornerRadius="8dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:gravity="center_vertical"
+                    android:background="@color/primary_light">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="💬 Team Chat Room • Collaborate in real-time"
+                        android:textColor="@color/primary_dark"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShareCallInChat"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="📞 Start Call"
+                        android:textSize="11sp"
+                        android:paddingHorizontal="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvChatMessages"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingVertical="8dp" />
+
+            <!-- Sticky Chat Input Bar -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardElevation="6dp"
+                app:cardCornerRadius="0dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="8dp"
+                    android:gravity="center_vertical"
+                    android:background="@color/surface">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etChatMessageInput"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="Type a message to team..."
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:textSize="14sp"
+                        android:maxLines="3" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendChatMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="Send"
+                        android:textSize="12sp"
+                        app:cornerRadius="20dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Tab 2: Roadmap & Sprint Timeline View -->
         <LinearLayout
             android:id="@+id/layoutRoadmap"
             android:layout_width="match_parent"
@@ -277,7 +390,7 @@
                 android:paddingBottom="80dp" />
         </LinearLayout>
 
-        <!-- Tab 2: Files View -->
+        <!-- Tab 3: Files & Code Snippets View -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFiles"
             android:layout_width="match_parent"
@@ -287,7 +400,7 @@
             android:paddingBottom="80dp"
             android:visibility="gone" />
 
-        <!-- Tab 3: Agile Analytics & Workload View -->
+        <!-- Tab 4: Agile Analytics & Workload View -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/layoutAnalytics"
             android:layout_width="match_parent"

@@ -18,6 +18,7 @@ public class Project {
     private String category;   // e.g. "SIH Hackathon", "Capstone", "Research", "Side Project"
     private String lookingFor; // e.g. "Android Dev, UI/UX Designer"
     private String collegeDomain;
+    private String githubRepoUrl;
 
     public Project() {
         this.members = new HashMap<>();
@@ -40,6 +41,7 @@ public class Project {
         this.category = "General";
         this.lookingFor = "";
         this.collegeDomain = "";
+        this.githubRepoUrl = "";
     }
 
     public String getProjectId() { return projectId; }
@@ -83,4 +85,7 @@ public class Project {
 
     public String getCollegeDomain() { return collegeDomain; }
     public void setCollegeDomain(String collegeDomain) { this.collegeDomain = collegeDomain; }
+
+    public String getGithubRepoUrl() { return githubRepoUrl; }
+    public void setGithubRepoUrl(String githubRepoUrl) { this.githubRepoUrl = githubRepoUrl; }
 }

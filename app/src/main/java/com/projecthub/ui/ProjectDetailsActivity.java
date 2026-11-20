@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,16 +18,20 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.projecthub.R;
+import com.projecthub.adapters.ChatMessageAdapter;
 import com.projecthub.adapters.FileAdapter;
 import com.projecthub.adapters.MilestoneAdapter;
 import com.projecthub.adapters.TaskAdapter;
+import com.projecthub.models.ChatMessage;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.Milestone;
 import com.projecthub.models.Project;
@@ -47,15 +52,23 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     private TaskAdapter taskAdapter;
     private MilestoneAdapter milestoneAdapter;
     private FileAdapter fileAdapter;
+    private ChatMessageAdapter chatAdapter;
 
     private TextView tvTitle, tvDesc, tvJoinCode, tvOverallProgress, tvEmptyState;
     private ProgressBar pbOverallProgress;
     private TabLayout tabLayout;
 
     // Tab Containers
-    private View layoutKanban, layoutRoadmap, layoutAnalytics;
-    private RecyclerView rvTasks, rvMilestones, rvFiles;
+    private View layoutKanban, layoutChat, layoutRoadmap, layoutAnalytics;
+    private RecyclerView rvTasks, rvChatMessages, rvMilestones, rvFiles;
     private ExtendedFloatingActionButton fabAction;
+
+    // Top Meeting Action
+    private MaterialButton btnLiveCall, btnShareCallInChat;
+
+    // Chat Input Views
+    private TextInputEditText etChatMessageInput;
+    private MaterialButton btnSendChatMessage;
 
     // Kanban Filter Chips
     private ChipGroup chipGroupFilters;
@@ -71,7 +84,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
 
     private String projectId, projectTitle, projectDesc, projectCode;
     private long projectDeadline = 0;
-    private int currentTab = 0; // 0 = Kanban, 1 = Roadmap, 2 = Files, 3 = Analytics
+    private int currentTab = 0; // 0=Kanban, 1=Chat, 2=Roadmap, 3=Files, 4=Analytics
 
     private List<Task> allTasks = new ArrayList<>();
     private List<Milestone> allMilestones = new ArrayList<>();
@@ -92,6 +105,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         setupTabs();
         setupRecyclerViews();
         setupFilterChips();
+        setupCallButtons();
 
         viewModel = new ViewModelProvider(this).get(ProjectDetailsViewModel.class);
         viewModel.init(projectId);
@@ -101,12 +115,14 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         fabAction.setOnClickListener(v -> {
             if (currentTab == 0) {
                 showAddTaskDialog();
-            } else if (currentTab == 1) {
-                showAddMilestoneDialog();
             } else if (currentTab == 2) {
+                showAddMilestoneDialog();
+            } else if (currentTab == 3) {
                 showAddFileDialog();
             }
         });
+
+        btnSendChatMessage.setOnClickListener(v -> sendChatMessage());
     }
 
     private void initViews() {
@@ -119,13 +135,20 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tabLayout = findViewById(R.id.tabLayout);
 
         layoutKanban = findViewById(R.id.layoutKanban);
+        layoutChat = findViewById(R.id.layoutChat);
         layoutRoadmap = findViewById(R.id.layoutRoadmap);
         layoutAnalytics = findViewById(R.id.layoutAnalytics);
 
         rvTasks = findViewById(R.id.rvTasks);
+        rvChatMessages = findViewById(R.id.rvChatMessages);
         rvMilestones = findViewById(R.id.rvMilestones);
         rvFiles = findViewById(R.id.rvFiles);
         fabAction = findViewById(R.id.fabAction);
+
+        btnLiveCall = findViewById(R.id.btnLiveCall);
+        btnShareCallInChat = findViewById(R.id.btnShareCallInChat);
+        etChatMessageInput = findViewById(R.id.etChatMessageInput);
+        btnSendChatMessage = findViewById(R.id.btnSendChatMessage);
 
         chipGroupFilters = findViewById(R.id.chipGroupFilters);
 
@@ -156,8 +179,9 @@ public class ProjectDetailsActivity extends AppCompatActivity {
 
     private void setupTabs() {
         tabLayout.addTab(tabLayout.newTab().setText("Kanban Board"));
+        tabLayout.addTab(tabLayout.newTab().setText("Team Chat"));
         tabLayout.addTab(tabLayout.newTab().setText("Roadmap & Sprints"));
-        tabLayout.addTab(tabLayout.newTab().setText("Files & Links"));
+        tabLayout.addTab(tabLayout.newTab().setText("Files & Code"));
         tabLayout.addTab(tabLayout.newTab().setText("Agile Analytics"));
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -175,21 +199,25 @@ public class ProjectDetailsActivity extends AppCompatActivity {
 
     private void updateTabVisibility() {
         layoutKanban.setVisibility(currentTab == 0 ? View.VISIBLE : View.GONE);
-        layoutRoadmap.setVisibility(currentTab == 1 ? View.VISIBLE : View.GONE);
-        rvFiles.setVisibility(currentTab == 2 ? View.VISIBLE : View.GONE);
-        layoutAnalytics.setVisibility(currentTab == 3 ? View.VISIBLE : View.GONE);
+        layoutChat.setVisibility(currentTab == 1 ? View.VISIBLE : View.GONE);
+        layoutRoadmap.setVisibility(currentTab == 2 ? View.VISIBLE : View.GONE);
+        rvFiles.setVisibility(currentTab == 3 ? View.VISIBLE : View.GONE);
+        layoutAnalytics.setVisibility(currentTab == 4 ? View.VISIBLE : View.GONE);
 
         if (currentTab == 0) {
             fabAction.show();
             fabAction.setText("Add Issue");
             checkEmptyState(taskAdapter.getItemCount());
         } else if (currentTab == 1) {
+            fabAction.hide();
+            tvEmptyState.setVisibility(View.GONE);
+        } else if (currentTab == 2) {
             fabAction.show();
             fabAction.setText("Add Milestone");
             checkEmptyState(milestoneAdapter.getItemCount());
-        } else if (currentTab == 2) {
+        } else if (currentTab == 3) {
             fabAction.show();
-            fabAction.setText("Add Resource");
+            fabAction.setText("Share File / Code");
             checkEmptyState(fileAdapter.getItemCount());
         } else {
             fabAction.hide();
@@ -198,7 +226,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     }
 
     private void checkEmptyState(int count) {
-        if (currentTab == 3) {
+        if (currentTab == 1 || currentTab == 4) {
             tvEmptyState.setVisibility(View.GONE);
             return;
         }
@@ -214,6 +242,15 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         rvTasks.setLayoutManager(new LinearLayoutManager(this));
         rvTasks.setAdapter(taskAdapter);
 
+        // Team Chat
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUid = currentUser != null ? currentUser.getUid() : "";
+        chatAdapter = new ChatMessageAdapter(currentUid);
+        LinearLayoutManager chatLayoutManager = new LinearLayoutManager(this);
+        chatLayoutManager.setStackFromEnd(true);
+        rvChatMessages.setLayoutManager(chatLayoutManager);
+        rvChatMessages.setAdapter(chatAdapter);
+
         // Roadmap Milestones
         milestoneAdapter = new MilestoneAdapter((milestone, newStatus) -> {
             viewModel.updateMilestoneStatus(projectId, milestone.getMilestoneId(), newStatus);
@@ -221,7 +258,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         rvMilestones.setLayoutManager(new LinearLayoutManager(this));
         rvMilestones.setAdapter(milestoneAdapter);
 
-        // Files
+        // Files & Code Snippets
         fileAdapter = new FileAdapter(file -> {
             if (file.getUrl() != null && !file.getUrl().isEmpty()) {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(file.getUrl()));
@@ -230,6 +267,8 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     Toast.makeText(this, "Cannot open URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+            } else if ("CODE".equalsIgnoreCase(file.getType())) {
+                Toast.makeText(this, "Code snippet is ready to copy!", Toast.LENGTH_SHORT).show();
             }
         });
         rvFiles.setLayoutManager(new LinearLayoutManager(this));
@@ -271,13 +310,67 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             } else if (checkedChipId == R.id.chipFilterBugs) {
                 if ("BUG".equalsIgnoreCase(issueType)) filtered.add(t);
             } else {
-                // All Tasks
                 filtered.add(t);
             }
         }
 
         taskAdapter.setTasks(filtered);
         if (currentTab == 0) checkEmptyState(filtered.size());
+    }
+
+    private void setupCallButtons() {
+        View.OnClickListener callListener = v -> showLiveMeetingDialog();
+        btnLiveCall.setOnClickListener(callListener);
+        btnShareCallInChat.setOnClickListener(callListener);
+    }
+
+    private void showLiveMeetingDialog() {
+        String safeId = projectId != null ? projectId.replaceAll("[^a-zA-Z0-9]", "") : "room";
+        String meetingUrl = "https://meet.jit.si/ProjectHub_" + safeId;
+
+        new AlertDialog.Builder(this)
+            .setTitle("Live Team Video / Voice Call")
+            .setMessage("Launch instant secure meeting room for project:\n" + projectTitle + "\n\nRoom Link:\n" + meetingUrl)
+            .setPositiveButton("Join Call Now", (dialog, which) -> {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(meetingUrl));
+                try {
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Could not open browser: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNeutralButton("Share Link in Chat", (dialog, which) -> {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                String senderName = user != null && user.getEmail() != null ? user.getEmail().split("@")[0] : "Team Member";
+                String senderId = user != null ? user.getUid() : "anon";
+
+                ChatMessage callMsg = new ChatMessage(
+                    null, projectId, senderId, senderName, user != null ? user.getEmail() : "",
+                    "📞 Started team video call! Tap to join: " + meetingUrl,
+                    "CALL", System.currentTimeMillis()
+                );
+                viewModel.sendChatMessage(projectId, callMsg);
+                Toast.makeText(this, "Call link shared in Team Chat!", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void sendChatMessage() {
+        String text = etChatMessageInput.getText() != null ? etChatMessageInput.getText().toString().trim() : "";
+        if (text.isEmpty()) return;
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String senderName = user != null && user.getEmail() != null ? user.getEmail().split("@")[0] : "Team Member";
+        String senderId = user != null ? user.getUid() : "anon";
+        String senderEmail = user != null && user.getEmail() != null ? user.getEmail() : "";
+
+        ChatMessage message = new ChatMessage(
+            null, projectId, senderId, senderName, senderEmail, text, "TEXT", System.currentTimeMillis()
+        );
+
+        viewModel.sendChatMessage(projectId, message);
+        etChatMessageInput.setText("");
     }
 
     private void openTaskDetails(Task task) {
@@ -295,7 +388,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     }
 
     private void observeData() {
-        // Project details (deadline, category, etc.)
+        // Project details
         viewModel.getProject().observe(this, project -> {
             if (project != null) {
                 if (project.getTitle() != null) tvTitle.setText(project.getTitle());
@@ -308,7 +401,6 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         // Tasks
         viewModel.getTasks().observe(this, tasks -> {
             allTasks = tasks != null ? tasks : new ArrayList<>();
-            // Reapply current chip filter
             int checkedId = chipGroupFilters.getCheckedChipId();
             if (checkedId == View.NO_ID) checkedId = R.id.chipFilterAll;
             filterTasks(checkedId);
@@ -317,18 +409,28 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             updateAnalytics(allTasks);
         });
 
+        // Chat Messages
+        viewModel.getChatMessages().observe(this, messages -> {
+            if (messages != null) {
+                chatAdapter.setMessages(messages);
+                if (!messages.isEmpty()) {
+                    rvChatMessages.scrollToPosition(messages.size() - 1);
+                }
+            }
+        });
+
         // Milestones
         viewModel.getMilestones().observe(this, milestones -> {
             allMilestones = milestones != null ? milestones : new ArrayList<>();
             milestoneAdapter.setMilestones(allMilestones);
             updateMilestonesRatio(allMilestones);
-            if (currentTab == 1) checkEmptyState(allMilestones.size());
+            if (currentTab == 2) checkEmptyState(allMilestones.size());
         });
 
-        // Files
+        // Files & Code
         viewModel.getFiles().observe(this, files -> {
             fileAdapter.setFiles(files);
-            if (currentTab == 2) checkEmptyState(files.size());
+            if (currentTab == 3) checkEmptyState(files.size());
         });
 
         viewModel.getActionMessage().observe(this, msg -> {
@@ -429,7 +531,6 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tvStatTasks.setText("📋 Tasks: " + taskCount);
         tvStatDocs.setText("📄 Docs: " + docs);
 
-        // Render Member Workload
         layoutMemberWorkload.removeAllViews();
         if (memberTaskCount.isEmpty()) {
             TextView tvNone = new TextView(this);
@@ -481,14 +582,12 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Determine Issue Type
                 String issueType = "TASK";
                 int checkedTypeId = rgIssueType.getCheckedRadioButtonId();
                 if (checkedTypeId == R.id.rbTypeBug) issueType = "BUG";
                 else if (checkedTypeId == R.id.rbTypeFeature) issueType = "FEATURE";
                 else if (checkedTypeId == R.id.rbTypeDoc) issueType = "DOCUMENTATION";
 
-                // Determine Priority
                 String priority = "MEDIUM";
                 int checkedPriId = rgPriority.getCheckedRadioButtonId();
                 if (checkedPriId == R.id.rbLow) priority = "LOW";
@@ -534,25 +633,61 @@ public class ProjectDetailsActivity extends AppCompatActivity {
 
     private void showAddFileDialog() {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_file, null);
+        RadioGroup rgResourceType = view.findViewById(R.id.rgResourceType);
         TextInputEditText etName = view.findViewById(R.id.etFileName);
+        TextInputLayout tilFileUrl = view.findViewById(R.id.tilFileUrl);
         TextInputEditText etUrl = view.findViewById(R.id.etFileUrl);
+        TextInputLayout tilFileLang = view.findViewById(R.id.tilFileLang);
+        TextInputEditText etLang = view.findViewById(R.id.etFileLang);
+        TextInputLayout tilFileSnippet = view.findViewById(R.id.tilFileSnippet);
+        TextInputEditText etSnippet = view.findViewById(R.id.etFileSnippet);
+
+        rgResourceType.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbTypeCode) {
+                tilFileUrl.setVisibility(View.GONE);
+                tilFileLang.setVisibility(View.VISIBLE);
+                tilFileSnippet.setVisibility(View.VISIBLE);
+            } else {
+                tilFileUrl.setVisibility(View.VISIBLE);
+                tilFileLang.setVisibility(View.GONE);
+                tilFileSnippet.setVisibility(View.GONE);
+            }
+        });
 
         new AlertDialog.Builder(this)
             .setView(view)
-            .setPositiveButton("Save Reference", (dialog, which) -> {
+            .setPositiveButton("Share", (dialog, which) -> {
                 String name = etName.getText() != null ? etName.getText().toString().trim() : "";
-                String url = etUrl.getText() != null ? etUrl.getText().toString().trim() : "";
-
-                if (name.isEmpty() || url.isEmpty()) {
-                    Toast.makeText(this, "Name and URL are required", Toast.LENGTH_SHORT).show();
+                if (name.isEmpty()) {
+                    Toast.makeText(this, "Title is required", Toast.LENGTH_SHORT).show();
                     return;
+                }
+
+                int checkedType = rgResourceType.getCheckedRadioButtonId();
+                String type = "LINK";
+                String url = etUrl.getText() != null ? etUrl.getText().toString().trim() : "";
+                String snippet = "";
+                String lang = "General";
+
+                if (checkedType == R.id.rbTypeCode) {
+                    type = "CODE";
+                    snippet = etSnippet.getText() != null ? etSnippet.getText().toString().trim() : "";
+                    lang = etLang.getText() != null ? etLang.getText().toString().trim() : "General";
+                    if (snippet.isEmpty()) {
+                        Toast.makeText(this, "Code snippet cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                } else if (checkedType == R.id.rbTypeGitHub) {
+                    type = "GITHUB";
                 }
 
                 String uploader = FirebaseAuth.getInstance().getCurrentUser() != null && 
                                   FirebaseAuth.getInstance().getCurrentUser().getEmail() != null ?
-                                  FirebaseAuth.getInstance().getCurrentUser().getEmail() : "Member";
+                                  FirebaseAuth.getInstance().getCurrentUser().getEmail().split("@")[0] : "Member";
 
-                FileReference ref = new FileReference(null, projectId, name, url, "LINK", uploader, System.currentTimeMillis());
+                FileReference ref = new FileReference(
+                    null, projectId, name, url, type, snippet, lang, uploader, System.currentTimeMillis()
+                );
                 viewModel.addFileReference(projectId, ref);
             })
             .setNegativeButton("Cancel", null)

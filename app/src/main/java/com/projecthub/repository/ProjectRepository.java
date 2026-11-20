@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.projecthub.models.ChatMessage;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.JoinRequest;
 import com.projecthub.models.Milestone;
@@ -309,6 +310,40 @@ public class ProjectRepository {
             .addOnFailureListener(e -> {
                 if (callback != null) callback.onError(e.getMessage());
             });
+    }
+
+    public LiveData<List<ChatMessage>> getProjectChatMessages(String projectId) {
+        MutableLiveData<List<ChatMessage>> messagesLiveData = new MutableLiveData<>();
+
+        db.collection("projects").document(projectId).collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener((snapshots, error) -> {
+                if (snapshots != null) {
+                    messagesLiveData.setValue(snapshots.toObjects(ChatMessage.class));
+                }
+            });
+
+        return messagesLiveData;
+    }
+
+    public void sendChatMessage(String projectId, ChatMessage message, OperationCallback callback) {
+        DocumentReference docRef = db.collection("projects").document(projectId)
+            .collection("messages").document();
+        message.setMessageId(docRef.getId());
+        message.setProjectId(projectId);
+
+        docRef.set(message)
+            .addOnSuccessListener(aVoid -> {
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+    }
+
+    public void updateProjectGithubUrl(String projectId, String githubUrl) {
+        db.collection("projects").document(projectId)
+            .update("githubRepoUrl", githubUrl);
     }
 
     private void recalculateProgress(String projectId) {
