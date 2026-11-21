@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // Any authenticated student can view profiles (name, department, roll number)
+      allow read: if isSignedIn();
+      // Only the user themselves can update their profile or FCM token
+      allow write: if isUser(userId);
+
+      // In-App Notifications Subcollection
+      match /notifications/{notificationId} {
+        allow read, write: if isUser(userId);
+      }
+    }
+
+    // 2. Projects Collection
+    match /projects/{projectId} {
+      // Any authenticated user can read public projects (Campus Explore)
+      // Members can read private projects
+      allow read: if isSignedIn() && (
+        resource.data.public == true ||
+        resource.data.members[request.auth.uid] != null
+      );
+
+      // Any authenticated student can create a new project
+      allow create: if isSignedIn();
+
+      // Members can update project, or new applicants can join via code
+      allow update: if isSignedIn();
+
+      // Only team lead can delete the workspace
+      allow delete: if isSignedIn() && resource.data.leadId == request.auth.uid;
+
+      // Subcollections: Tasks & Comments
+      match /tasks/{taskId} {
+        allow read, write: if isSignedIn();
+
+        match /comments/{commentId} {
+          allow read, write: if isSignedIn();
+        }
+      }
+
+      // Subcollections: Sprints & Milestones
+      match /milestones/{milestoneId} {
+        allow read, write: if isSignedIn();
+      }
+
+      // Subcollections: Shared Files & Code Snippets
+      match /files/{fileId} {
+        allow read, write: if isSignedIn();
+      }
+
+      // Subcollections: Real-time Group Chat Messages
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // 3. Join Requests Collection (Campus Discovery)
+    match /join_requests/{requestId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (
+        resource.data.applicantId == request.auth.uid ||
+        resource.data.leadId == request.auth.uid
+      );
+      allow update: if isSignedIn() && (
+        resource.data.applicantId == request.auth.uid ||
+        resource.data.leadId == request.auth.uid
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.applicantId == request.auth.uid ||
+        resource.data.leadId == request.auth.uid
+      );
+    }
+  }
+}
