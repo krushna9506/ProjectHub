@@ -1,6 +1,9 @@
 package com.projecthub.ui;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,14 +14,19 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.projecthub.R;
 import com.projecthub.adapters.ProjectAdapter;
+import com.projecthub.models.AppNotification;
+import com.projecthub.utils.NotificationHelper;
 import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
 
@@ -28,11 +36,11 @@ public class MainActivity extends AppCompatActivity {
     private DashboardViewModel dashboardViewModel;
     private ProjectAdapter projectAdapter;
 
-    private TextView tvGreeting, tvStudentInfo, tvEmptyProjects;
+    private TextView tvGreeting, tvStudentInfo, tvEmptyProjects, tvNotificationBadge;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
     private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
-    private ImageButton btnLogout;
+    private ImageButton btnLogout, btnNotifications;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +57,15 @@ public class MainActivity extends AppCompatActivity {
         btnExploreCampus = findViewById(R.id.btnExploreCampus);
         btnManageRequests = findViewById(R.id.btnManageRequests);
         btnLogout = findViewById(R.id.btnLogout);
+        btnNotifications = findViewById(R.id.btnNotifications);
+        tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
+
+        NotificationHelper.createNotificationChannel(this);
+        checkNotificationPermission();
+
+        btnNotifications.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, NotificationsActivity.class));
+        });
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
@@ -73,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
                 tvGreeting.setText("Hello, " + user.getName());
                 tvStudentInfo.setText(user.getDepartment() + " • " + user.getRollNumber());
                 loadProjects(user.getUserId());
+                registerFcmToken(user.getUserId());
+                observeNotifications(user.getUserId());
             }
         });
 
@@ -117,6 +136,50 @@ public class MainActivity extends AppCompatActivity {
                 projectAdapter.setProjects(projects);
             }
         });
+    }
+
+    private void registerFcmToken(String userId) {
+        FirebaseMessaging.getInstance().getToken()
+            .addOnSuccessListener(token -> {
+                if (token != null && !token.isEmpty()) {
+                    dashboardViewModel.saveFcmToken(userId, token);
+                }
+            })
+            .addOnFailureListener(e -> {
+                // FCM token retrieval ignored in offline or dev mode
+            });
+    }
+
+    private void observeNotifications(String userId) {
+        dashboardViewModel.getInAppNotifications(userId).observe(this, list -> {
+            if (list == null || list.isEmpty()) {
+                tvNotificationBadge.setVisibility(View.GONE);
+                return;
+            }
+            int unread = 0;
+            for (AppNotification n : list) {
+                if (!n.isRead()) unread++;
+            }
+            if (unread > 0) {
+                tvNotificationBadge.setVisibility(View.VISIBLE);
+                tvNotificationBadge.setText(unread > 9 ? "9+" : String.valueOf(unread));
+            } else {
+                tvNotificationBadge.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    1001
+                );
+            }
+        }
     }
 
     private void showJoinProjectDialog() {

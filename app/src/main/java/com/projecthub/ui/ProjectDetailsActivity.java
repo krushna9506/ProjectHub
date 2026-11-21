@@ -350,6 +350,13 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     "CALL", System.currentTimeMillis()
                 );
                 viewModel.sendChatMessage(projectId, callMsg);
+                com.projecthub.utils.NotificationHelper.showSystemNotification(
+                    ProjectDetailsActivity.this,
+                    "Live Team Meeting",
+                    "Meeting room opened for " + (projectTitle != null ? projectTitle : "project"),
+                    projectId,
+                    "CALL"
+                );
                 Toast.makeText(this, "Call link shared in Team Chat!", Toast.LENGTH_SHORT).show();
             })
             .setNegativeButton("Cancel", null)
@@ -599,6 +606,13 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     System.currentTimeMillis() + 86400000L * 7
                 );
                 viewModel.addTask(projectId, task);
+                com.projecthub.utils.NotificationHelper.showSystemNotification(
+                    ProjectDetailsActivity.this,
+                    "New Task: " + title,
+                    (assignee.isEmpty() ? "Unassigned" : "Assigned to " + assignee) + " • " + (projectTitle != null ? projectTitle : "Project"),
+                    projectId,
+                    "TASK"
+                );
             })
             .setNegativeButton("Cancel", null)
             .show();

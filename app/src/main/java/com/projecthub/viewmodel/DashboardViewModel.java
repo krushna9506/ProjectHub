@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.projecthub.models.AppNotification;
 import com.projecthub.models.JoinRequest;
 import com.projecthub.models.Project;
 import com.projecthub.repository.ProjectRepository;
@@ -125,6 +126,22 @@ public class DashboardViewModel extends ViewModel {
                 statusMessage.setValue("Error: " + message);
             }
         });
+    }
+
+    public LiveData<List<AppNotification>> getInAppNotifications(String userId) {
+        return repository.getInAppNotifications(userId);
+    }
+
+    public void markNotificationAsRead(String userId, String notificationId) {
+        repository.markNotificationAsRead(userId, notificationId);
+    }
+
+    public void clearAllNotifications(String userId) {
+        repository.clearAllNotifications(userId);
+    }
+
+    public void saveFcmToken(String userId, String token) {
+        repository.saveUserFcmToken(userId, token);
     }
 }
 

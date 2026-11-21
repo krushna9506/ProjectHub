@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.projecthub.models.AppNotification;
 import com.projecthub.models.ChatMessage;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.JoinRequest;
@@ -344,6 +345,44 @@ public class ProjectRepository {
     public void updateProjectGithubUrl(String projectId, String githubUrl) {
         db.collection("projects").document(projectId)
             .update("githubRepoUrl", githubUrl);
+    }
+
+    public LiveData<List<AppNotification>> getInAppNotifications(String userId) {
+        MutableLiveData<List<AppNotification>> notificationsLiveData = new MutableLiveData<>();
+        db.collection("users").document(userId)
+            .collection("notifications")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener((snapshots, error) -> {
+                if (snapshots != null) {
+                    notificationsLiveData.setValue(snapshots.toObjects(AppNotification.class));
+                }
+            });
+        return notificationsLiveData;
+    }
+
+    public void markNotificationAsRead(String userId, String notificationId) {
+        db.collection("users").document(userId)
+            .collection("notifications").document(notificationId)
+            .update("read", true);
+    }
+
+    public void clearAllNotifications(String userId) {
+        db.collection("users").document(userId)
+            .collection("notifications").get()
+            .addOnSuccessListener(querySnapshot -> {
+                if (querySnapshot != null) {
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        doc.getReference().delete();
+                    }
+                }
+            });
+    }
+
+    public void saveUserFcmToken(String userId, String token) {
+        if (userId != null && !userId.isEmpty() && token != null) {
+            db.collection("users").document(userId)
+                .update("fcmToken", token);
+        }
     }
 
     private void recalculateProgress(String projectId) {

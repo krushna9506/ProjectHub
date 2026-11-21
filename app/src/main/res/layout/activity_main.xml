@@ -46,6 +46,35 @@
                     android:textColor="@color/text_secondary" />
             </LinearLayout>
 
+            <!-- Notification Bell with Unread Badge -->
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp">
+
+                <ImageButton
+                    android:id="@+id/btnNotifications"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_popup_reminder"
+                    app:tint="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tvNotificationBadge"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:backgroundTint="@color/priority_urgent"
+                    android:textColor="@color/surface"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:visibility="gone"
+                    android:text="1" />
+            </FrameLayout>
+
             <ImageButton
                 android:id="@+id/btnLogout"
                 android:layout_width="40dp"

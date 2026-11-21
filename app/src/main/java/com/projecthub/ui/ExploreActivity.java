@@ -101,6 +101,16 @@ public class ExploreActivity extends AppCompatActivity {
                 );
 
                 dashboardViewModel.sendJoinRequest(request);
+
+                com.projecthub.utils.NotificationHelper.dispatchNotification(
+                    ExploreActivity.this,
+                    project.getLeadId(),
+                    "New Join Request",
+                    applicantName + " requested to join " + project.getTitle(),
+                    "JOIN_REQUEST",
+                    project.getProjectId(),
+                    project.getTitle()
+                );
             })
             .setNegativeButton("Cancel", null)
             .show();
