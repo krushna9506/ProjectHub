@@ -5,9 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    android:layout_marginVertical="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="1dp"
     app:strokeColor="@color/divider"
     app:strokeWidth="1dp">
 
@@ -17,43 +20,82 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <RelativeLayout
+        <!-- Top Row: Project Avatar + Title & Category + Join Code -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <!-- Rounded Project Initial Avatar -->
             <TextView
-                android:id="@+id/tvProjectTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/tvJoinCode"
-                android:textSize="18sp"
+                android:id="@+id/tvProjectAvatar"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_project_avatar"
+                android:gravity="center"
+                android:textColor="@color/primary"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary" />
+                android:text="P" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvProjectTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:text="Project Title" />
+
+                <TextView
+                    android:id="@+id/tvProjectCategory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="1dp"
+                    android:background="@drawable/bg_category_pill"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:text="GENERAL" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvJoinCode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
                 android:background="@drawable/bg_code_pill"
-                android:paddingHorizontal="8dp"
+                android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="@color/primary" />
-        </RelativeLayout>
+                android:textColor="@color/primary"
+                android:text="CODE: ABCD" />
+        </LinearLayout>
 
+        <!-- Project Description -->
         <TextView
             android:id="@+id/tvProjectDesc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="10dp"
             android:textColor="@color/text_secondary"
             android:maxLines="2"
             android:ellipsize="end"
-            android:textSize="14sp" />
+            android:lineSpacingExtra="2dp"
+            android:textSize="13sp"
+            android:text="Project description goes here..." />
 
+        <!-- Info Badges: Members & Deadline -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,11 +103,37 @@
             android:layout_marginTop="12dp"
             android:gravity="center_vertical">
 
+            <TextView
+                android:id="@+id/tvProjectMembersCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:text="👥 1 member" />
+
+            <TextView
+                android:id="@+id/tvProjectDeadline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:text="⏳ Active" />
+        </LinearLayout>
+
+        <!-- Progress Bar & Percentage -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical">
+
             <ProgressBar
                 android:id="@+id/pbProjectProgress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="0dp"
-                android:layout_height="8dp"
+                android:layout_height="6dp"
                 android:layout_weight="1"
                 android:max="100"
                 android:progressTint="@color/primary" />
@@ -74,10 +142,11 @@
                 android:id="@+id/tvProgressPercent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textSize="13sp"
+                android:layout_marginStart="10dp"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary" />
+                android:textColor="@color/primary"
+                android:text="0%" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

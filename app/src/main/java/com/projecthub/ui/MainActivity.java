@@ -36,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
     private DashboardViewModel dashboardViewModel;
     private ProjectAdapter projectAdapter;
 
-    private TextView tvGreeting, tvStudentInfo, tvEmptyProjects, tvNotificationBadge;
+    private TextView tvGreeting, tvStudentInfo, tvUserAvatar, tvProjectCountBadge, tvNotificationBadge;
+    private View layoutEmptyProjects;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
     private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
@@ -49,7 +50,9 @@ public class MainActivity extends AppCompatActivity {
 
         tvGreeting = findViewById(R.id.tvGreeting);
         tvStudentInfo = findViewById(R.id.tvStudentInfo);
-        tvEmptyProjects = findViewById(R.id.tvEmptyProjects);
+        tvUserAvatar = findViewById(R.id.tvUserAvatar);
+        tvProjectCountBadge = findViewById(R.id.tvProjectCountBadge);
+        layoutEmptyProjects = findViewById(R.id.layoutEmptyProjects);
         pbLoading = findViewById(R.id.pbLoading);
         rvProjects = findViewById(R.id.rvProjects);
         btnCreateProject = findViewById(R.id.btnCreateProject);
@@ -88,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
         authViewModel.getCurrentUser().observe(this, user -> {
             if (user != null) {
                 tvGreeting.setText("Hello, " + user.getName());
+                if (user.getName() != null && !user.getName().isEmpty()) {
+                    tvUserAvatar.setText(user.getName().substring(0, 1).toUpperCase());
+                }
                 tvStudentInfo.setText(user.getDepartment() + " • " + user.getRollNumber());
                 loadProjects(user.getUserId());
                 registerFcmToken(user.getUserId());
@@ -129,10 +135,15 @@ public class MainActivity extends AppCompatActivity {
         dashboardViewModel.getProjects(userId).observe(this, projects -> {
             pbLoading.setVisibility(View.GONE);
             if (projects == null || projects.isEmpty()) {
-                tvEmptyProjects.setVisibility(View.VISIBLE);
+                if (layoutEmptyProjects != null) layoutEmptyProjects.setVisibility(View.VISIBLE);
+                if (tvProjectCountBadge != null) tvProjectCountBadge.setText("0 projects");
                 projectAdapter.setProjects(null);
             } else {
-                tvEmptyProjects.setVisibility(View.GONE);
+                if (layoutEmptyProjects != null) layoutEmptyProjects.setVisibility(View.GONE);
+                if (tvProjectCountBadge != null) {
+                    int size = projects.size();
+                    tvProjectCountBadge.setText(size + (size == 1 ? " project" : " projects"));
+                }
                 projectAdapter.setProjects(projects);
             }
         });
