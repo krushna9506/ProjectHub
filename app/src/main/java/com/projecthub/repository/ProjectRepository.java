@@ -217,10 +217,25 @@ public class ProjectRepository {
             .collection("tasks").document();
         task.setTaskId(docRef.getId());
         task.setProjectId(projectId);
+        if (task.getTaskKey() == null || task.getTaskKey().isEmpty()) {
+            task.setTaskKey("TS-" + (100 + (int)(Math.random() * 900)));
+        }
 
         docRef.set(task)
             .addOnSuccessListener(aVoid -> {
                 recalculateProgress(projectId);
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+    }
+
+    public void logTaskWorkTime(String projectId, String taskId, double hours, OperationCallback callback) {
+        db.collection("projects").document(projectId)
+            .collection("tasks").document(taskId)
+            .update("timeSpentHours", FieldValue.increment(hours))
+            .addOnSuccessListener(aVoid -> {
                 if (callback != null) callback.onSuccess();
             })
             .addOnFailureListener(e -> {

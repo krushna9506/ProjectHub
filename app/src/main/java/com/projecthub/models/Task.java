@@ -13,12 +13,19 @@ public class Task {
     private String assignedTo;
     private String assignedToName;
     private long dueDate;
+    private String taskKey;
+    private String phase;
+    private double timeSpentHours;
+    private long startDate;
 
     public Task() {
         this.status = "TODO";
         this.priority = "MEDIUM";
         this.issueType = "TASK";
+        this.phase = "DEVELOPMENT";
         this.commentsCount = 0;
+        this.timeSpentHours = 0.0;
+        this.startDate = System.currentTimeMillis();
     }
 
     public Task(String taskId, String projectId, String milestoneId, String title, 
@@ -79,4 +86,16 @@ public class Task {
 
     public long getDueDate() { return dueDate; }
     public void setDueDate(long dueDate) { this.dueDate = dueDate; }
+
+    public String getTaskKey() { return taskKey; }
+    public void setTaskKey(String taskKey) { this.taskKey = taskKey; }
+
+    public String getPhase() { return phase != null && !phase.isEmpty() ? phase : "DEVELOPMENT"; }
+    public void setPhase(String phase) { this.phase = phase; }
+
+    public double getTimeSpentHours() { return timeSpentHours; }
+    public void setTimeSpentHours(double timeSpentHours) { this.timeSpentHours = timeSpentHours; }
+
+    public long getStartDate() { return startDate; }
+    public void setStartDate(long startDate) { this.startDate = startDate; }
 }

@@ -40,4 +40,14 @@
     <color name="issue_task_bg">#EFF6FF</color>
     <color name="issue_doc">#0D9488</color>
     <color name="issue_doc_bg">#F0FDFA</color>
+
+    <!-- Zoho Projects Phase Colors -->
+    <color name="phase_planning">#8B5CF6</color>
+    <color name="phase_planning_bg">#F5F3FF</color>
+    <color name="phase_design">#EA580C</color>
+    <color name="phase_design_bg">#FFF7ED</color>
+    <color name="phase_dev">#10B981</color>
+    <color name="phase_dev_bg">#ECFDF5</color>
+    <color name="phase_review">#2563EB</color>
+    <color name="phase_review_bg">#EFF6FF</color>
 </resources>

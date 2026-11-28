@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
@@ -38,6 +39,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.projecthub.R;
 import com.projecthub.adapters.ChatMessageAdapter;
 import com.projecthub.adapters.FileAdapter;
+import com.projecthub.adapters.GanttAdapter;
 import com.projecthub.adapters.MilestoneAdapter;
 import com.projecthub.adapters.TaskAdapter;
 import com.projecthub.models.ChatMessage;
@@ -94,6 +96,13 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     // Kanban Filter Chips
     private ChipGroup chipGroupFilters;
 
+    // Gantt Schedule & Milestones (Zoho Projects Feature)
+    private GanttAdapter ganttAdapter;
+    private RecyclerView rvGanttTasks;
+    private View layoutGanttSection, layoutMilestonesSection;
+    private ChipGroup chipGroupRoadmapMode;
+    private Chip chipModeGantt, chipModeMilestones;
+
     // Countdown / Sprint Widget Views
     private TextView tvCountdownCategory, tvCountdownDays, tvCountdownTargetDate, tvMilestonesRatio;
     private ProgressBar pbMilestonesRoadmap;
@@ -101,6 +110,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     // Analytics Views
     private TextView tvCountTodo, tvCountInProgress, tvCountInReview, tvCountDone;
     private TextView tvStatFeatures, tvStatBugs, tvStatTasks, tvStatDocs;
+    private TextView tvTotalHoursLogged, tvPhaseHoursBreakdown;
     private LinearLayout layoutMemberWorkload;
 
     private String projectId, projectTitle, projectDesc, projectCode;
@@ -163,7 +173,12 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             if (currentTab == 0) {
                 showAddTaskDialog();
             } else if (currentTab == 2) {
-                showAddMilestoneDialog();
+                boolean isGantt = (chipModeGantt != null && chipModeGantt.isChecked());
+                if (isGantt) {
+                    showAddTaskDialog();
+                } else {
+                    showAddMilestoneDialog();
+                }
             } else if (currentTab == 3) {
                 showAddFileDialog();
             }
@@ -203,6 +218,30 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         btnShareProject.setOnClickListener(v -> shareProjectSummary());
 
         chipGroupFilters = findViewById(R.id.chipGroupFilters);
+
+        // Gantt Schedule (Zoho Projects)
+        rvGanttTasks = findViewById(R.id.rvGanttTasks);
+        layoutGanttSection = findViewById(R.id.layoutGanttSection);
+        layoutMilestonesSection = findViewById(R.id.layoutMilestonesSection);
+        chipGroupRoadmapMode = findViewById(R.id.chipGroupRoadmapMode);
+        chipModeGantt = findViewById(R.id.chipModeGantt);
+        chipModeMilestones = findViewById(R.id.chipModeMilestones);
+
+        tvTotalHoursLogged = findViewById(R.id.tvTotalHoursLogged);
+        tvPhaseHoursBreakdown = findViewById(R.id.tvPhaseHoursBreakdown);
+
+        if (chipGroupRoadmapMode != null) {
+            chipGroupRoadmapMode.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (checkedIds.isEmpty()) return;
+                int id = checkedIds.get(0);
+                boolean isGantt = (id == R.id.chipModeGantt);
+                if (layoutGanttSection != null) layoutGanttSection.setVisibility(isGantt ? View.VISIBLE : View.GONE);
+                if (layoutMilestonesSection != null) layoutMilestonesSection.setVisibility(isGantt ? View.GONE : View.VISIBLE);
+                if (currentTab == 2) {
+                    fabAction.setText(isGantt ? "Add Task" : "Add Milestone");
+                }
+            });
+        }
 
         // Countdown widget
         tvCountdownCategory = findViewById(R.id.tvCountdownCategory);
@@ -265,8 +304,9 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             tvEmptyState.setVisibility(View.GONE);
         } else if (currentTab == 2) {
             fabAction.show();
-            fabAction.setText("Add Milestone");
-            checkEmptyState(milestoneAdapter.getItemCount());
+            boolean isGantt = (chipModeGantt != null && chipModeGantt.isChecked());
+            fabAction.setText(isGantt ? "Add Task" : "Add Milestone");
+            checkEmptyState(isGantt ? (ganttAdapter != null ? ganttAdapter.getItemCount() : 0) : milestoneAdapter.getItemCount());
         } else if (currentTab == 3) {
             fabAction.show();
             fabAction.setText("Share File / Code");
@@ -309,6 +349,11 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         });
         rvMilestones.setLayoutManager(new LinearLayoutManager(this));
         rvMilestones.setAdapter(milestoneAdapter);
+
+        // Zoho Projects Gantt Schedule Timeline
+        ganttAdapter = new GanttAdapter(task -> openTaskDetails(task));
+        rvGanttTasks.setLayoutManager(new LinearLayoutManager(this));
+        rvGanttTasks.setAdapter(ganttAdapter);
 
         // Files & Code Snippets
         fileAdapter = new FileAdapter(file -> {
@@ -443,6 +488,8 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         intent.putExtra("TASK_ISSUE_TYPE", task.getIssueType());
         intent.putExtra("TASK_ASSIGNEE", task.getAssignedToName());
         intent.putExtra("TASK_DUE_DATE", task.getDueDate());
+        intent.putExtra("TASK_PHASE", task.getPhase());
+        intent.putExtra("TASK_TIME_SPENT", task.getTimeSpentHours());
         startActivity(intent);
     }
 
@@ -470,6 +517,10 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             int checkedId = chipGroupFilters.getCheckedChipId();
             if (checkedId == View.NO_ID) checkedId = R.id.chipFilterAll;
             filterTasks(checkedId);
+
+            if (ganttAdapter != null) {
+                ganttAdapter.setTasks(allTasks);
+            }
 
             updateOverallProgress(allTasks);
             updateAnalytics(allTasks);
@@ -567,6 +618,8 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     private void updateAnalytics(List<Task> tasks) {
         int todo = 0, progress = 0, review = 0, done = 0;
         int features = 0, bugs = 0, taskCount = 0, docs = 0;
+        double totalHours = 0;
+        double planningHours = 0, designHours = 0, devHours = 0, reviewHours = 0;
         Map<String, Integer> memberTaskCount = new HashMap<>();
 
         for (Task t : tasks) {
@@ -582,6 +635,14 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             else if ("DOCUMENTATION".equalsIgnoreCase(type) || "DOC".equalsIgnoreCase(type)) docs++;
             else taskCount++;
 
+            double hours = t.getTimeSpentHours();
+            totalHours += hours;
+            String phase = t.getPhase() != null ? t.getPhase().toUpperCase() : "DEVELOPMENT";
+            if ("PLANNING".equals(phase)) planningHours += hours;
+            else if ("DESIGN".equals(phase)) designHours += hours;
+            else if ("REVIEW".equals(phase) || "TESTING".equals(phase)) reviewHours += hours;
+            else devHours += hours;
+
             String assignee = t.getAssignedToName() != null && !t.getAssignedToName().isEmpty() ? 
                 t.getAssignedToName() : "Unassigned";
             memberTaskCount.put(assignee, memberTaskCount.getOrDefault(assignee, 0) + 1);
@@ -596,6 +657,17 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tvStatBugs.setText("🐞 Bugs: " + bugs);
         tvStatTasks.setText("📋 Tasks: " + taskCount);
         tvStatDocs.setText("📄 Docs: " + docs);
+
+        if (tvTotalHoursLogged != null) {
+            tvTotalHoursLogged.setText(String.format(Locale.getDefault(), "⏱️ %.1f hrs", totalHours));
+        }
+        if (tvPhaseHoursBreakdown != null) {
+            tvPhaseHoursBreakdown.setText(String.format(
+                Locale.getDefault(),
+                "Planning: %.1fh • Design: %.1fh • Dev: %.1fh • Review: %.1fh",
+                planningHours, designHours, devHours, reviewHours
+            ));
+        }
 
         layoutMemberWorkload.removeAllViews();
         if (memberTaskCount.isEmpty()) {
@@ -635,6 +707,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         TextInputEditText etAssignee = view.findViewById(R.id.etAssignee);
         RadioGroup rgIssueType = view.findViewById(R.id.rgIssueType);
         RadioGroup rgPriority = view.findViewById(R.id.rgPriority);
+        RadioGroup rgPhase = view.findViewById(R.id.rgPhase);
 
         new AlertDialog.Builder(this)
             .setView(view)
@@ -660,10 +733,17 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                 else if (checkedPriId == R.id.rbHigh) priority = "HIGH";
                 else if (checkedPriId == R.id.rbUrgent) priority = "URGENT";
 
+                String phase = "DEVELOPMENT";
+                int checkedPhaseId = rgPhase.getCheckedRadioButtonId();
+                if (checkedPhaseId == R.id.rbPhasePlanning) phase = "PLANNING";
+                else if (checkedPhaseId == R.id.rbPhaseDesign) phase = "DESIGN";
+                else if (checkedPhaseId == R.id.rbPhaseReview) phase = "REVIEW";
+
                 Task task = new Task(
                     null, projectId, null, title, desc, "TODO", priority, issueType, null, assignee, 
                     System.currentTimeMillis() + 86400000L * 7
                 );
+                task.setPhase(phase);
                 viewModel.addTask(projectId, task);
                 com.projecthub.utils.NotificationHelper.showSystemNotification(
                     ProjectDetailsActivity.this,

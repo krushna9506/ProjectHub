@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/divider"
+    app:strokeWidth="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Top Row: Task Key ID, Phase Tag, and Time Logged -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- ID Badge (e.g. ZS-T102 / PH-101) -->
+            <TextView
+                android:id="@+id/tvGanttTaskId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_code_pill"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="2dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:textColor="@color/primary"
+                android:text="ZS-T102" />
+
+            <!-- Phase Badge -->
+            <TextView
+                android:id="@+id/tvGanttPhase"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="2dp"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/phase_planning"
+                android:background="@drawable/bg_category_pill"
+                android:text="PLANNING" />
+
+            <TextView
+                android:id="@+id/tvGanttTimeSpent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:text="⏱️ 0.0 hrs" />
+        </LinearLayout>
+
+        <!-- Task Title & Assignee -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvGanttTaskName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:text="Project Planning &amp; Architecture" />
+
+            <TextView
+                android:id="@+id/tvGanttAssignee"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="11.5sp"
+                android:textColor="@color/text_secondary"
+                android:text="👤 Unassigned" />
+        </LinearLayout>
+
+        <!-- Visual Gantt Timeline Bar (Zoho Projects Style) -->
+        <LinearLayout
+            android:id="@+id/layoutGanttBarContainer"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_category_pill"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="8dp">
+
+            <ProgressBar
+                android:id="@+id/pbGanttTimeline"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="8dp"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="60"
+                android:progressTint="@color/phase_planning" />
+
+            <TextView
+                android:id="@+id/tvGanttStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:text="IN PROGRESS (60%)" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

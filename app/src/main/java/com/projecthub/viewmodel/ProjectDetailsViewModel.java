@@ -67,6 +67,20 @@ public class ProjectDetailsViewModel extends ViewModel {
         repository.updateTaskStatus(projectId, taskId, newStatus);
     }
 
+    public void logTaskWorkTime(String projectId, String taskId, double hours) {
+        repository.logTaskWorkTime(projectId, taskId, hours, new ProjectRepository.OperationCallback() {
+            @Override
+            public void onSuccess() {
+                actionMessage.setValue("Logged " + hours + "h to task timesheet!");
+            }
+
+            @Override
+            public void onError(String message) {
+                actionMessage.setValue("Failed to log time: " + message);
+            }
+        });
+    }
+
     public void updateMilestoneStatus(String projectId, String milestoneId, String newStatus) {
         repository.updateMilestoneStatus(projectId, milestoneId, newStatus);
     }

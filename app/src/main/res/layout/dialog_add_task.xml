@@ -147,4 +147,50 @@
             android:layout_marginStart="8dp" />
     </RadioGroup>
 
+    <!-- Zoho Projects Phase Selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Project Phase (Gantt Schedule)"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="12dp" />
+
+    <RadioGroup
+        android:id="@+id/rgPhase"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <RadioButton
+            android:id="@+id/rbPhasePlanning"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Planning" />
+
+        <RadioButton
+            android:id="@+id/rbPhaseDesign"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Design"
+            android:layout_marginStart="6dp" />
+
+        <RadioButton
+            android:id="@+id/rbPhaseDev"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dev"
+            android:checked="true"
+            android:layout_marginStart="6dp" />
+
+        <RadioButton
+            android:id="@+id/rbPhaseReview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Review"
+            android:layout_marginStart="6dp" />
+    </RadioGroup>
+
 </LinearLayout>

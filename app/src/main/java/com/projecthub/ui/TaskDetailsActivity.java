@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -43,14 +44,17 @@ public class TaskDetailsActivity extends AppCompatActivity {
     private String taskIssueType;
     private String taskAssignee;
     private long taskDueDate;
+    private String taskPhase;
+    private double taskTimeSpent;
 
     private TextView tvIssueType, tvPriority, tvDueDate, tvTitle, tvDesc, tvAssignee;
+    private TextView tvDetailPhase, tvDetailTimeSpent;
     private TextView tvCommentsCountBadge, tvEmptyComments;
     private ChipGroup chipGroupStatus;
     private Chip chipTodo, chipInProgress, chipInReview, chipDone;
     private RecyclerView rvComments;
     private TextInputEditText etCommentInput;
-    private MaterialButton btnSendComment;
+    private MaterialButton btnSendComment, btnLogWorkTime;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
     private boolean isUpdatingChipSelection = false;
@@ -69,10 +73,13 @@ public class TaskDetailsActivity extends AppCompatActivity {
         taskIssueType = getIntent().getStringExtra("TASK_ISSUE_TYPE");
         taskAssignee = getIntent().getStringExtra("TASK_ASSIGNEE");
         taskDueDate = getIntent().getLongExtra("TASK_DUE_DATE", 0);
+        taskPhase = getIntent().getStringExtra("TASK_PHASE");
+        taskTimeSpent = getIntent().getDoubleExtra("TASK_TIME_SPENT", 0.0);
 
         if (taskStatus == null) taskStatus = "TODO";
         if (taskPriority == null) taskPriority = "MEDIUM";
         if (taskIssueType == null) taskIssueType = "TASK";
+        if (taskPhase == null) taskPhase = "DEVELOPMENT";
 
         initViews();
         setupToolbar();
@@ -103,6 +110,11 @@ public class TaskDetailsActivity extends AppCompatActivity {
         rvComments = findViewById(R.id.rvTaskComments);
         etCommentInput = findViewById(R.id.etCommentInput);
         btnSendComment = findViewById(R.id.btnSendComment);
+
+        tvDetailPhase = findViewById(R.id.tvDetailPhase);
+        tvDetailTimeSpent = findViewById(R.id.tvDetailTimeSpent);
+        btnLogWorkTime = findViewById(R.id.btnLogWorkTime);
+        btnLogWorkTime.setOnClickListener(v -> showLogTimeDialog());
     }
 
     private void setupToolbar() {
@@ -156,6 +168,38 @@ public class TaskDetailsActivity extends AppCompatActivity {
             priorityColor = ContextCompat.getColor(this, R.color.priority_medium);
         }
         tvPriority.getBackground().mutate().setTint(priorityColor);
+
+        // Phase & Time Spent (Zoho Projects Feature)
+        tvDetailPhase.setText("PHASE: " + (taskPhase != null ? taskPhase.toUpperCase() : "DEVELOPMENT"));
+        tvDetailTimeSpent.setText(String.format(Locale.US, "⏱️ %.1f hrs logged", taskTimeSpent));
+    }
+
+    private void showLogTimeDialog() {
+        final android.widget.EditText etHours = new android.widget.EditText(this);
+        etHours.setHint("Hours spent (e.g. 2.5)");
+        etHours.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        etHours.setPadding(40, 30, 40, 30);
+
+        new AlertDialog.Builder(this)
+            .setTitle("⏱️ Log Work Time (Timesheet)")
+            .setMessage("Record time spent by your team on this task:")
+            .setView(etHours)
+            .setPositiveButton("Log Hours", (dialog, which) -> {
+                String val = etHours.getText().toString().trim();
+                if (!val.isEmpty()) {
+                    try {
+                        double hrs = Double.parseDouble(val);
+                        if (hrs > 0) {
+                            viewModel.logTaskWorkTime(projectId, taskId, hrs);
+                            taskTimeSpent += hrs;
+                            tvDetailTimeSpent.setText(String.format(Locale.US, "⏱️ %.1f hrs logged", taskTimeSpent));
+                            Toast.makeText(this, "Logged " + hrs + " hours to timesheet!", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void setupStatusWorkflow() {

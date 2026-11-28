@@ -328,7 +328,7 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Tab 2: Roadmap & Sprint Timeline View -->
+        <!-- Tab 2: Roadmap, Gantt Chart & Sprints View -->
         <LinearLayout
             android:id="@+id/layoutRoadmap"
             android:layout_width="match_parent"
@@ -336,94 +336,183 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Sprint / Hackathon Countdown Widget Card -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- View Mode Switcher: Gantt vs Milestones -->
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="6dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                android:scrollbars="none"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupRoadmapMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipModeGantt"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📊 Gantt Timeline Chart"
+                        android:checked="true" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipModeMilestones"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🏁 Sprints &amp; Milestones" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <!-- Gantt Chart Section (Zoho Projects Style) -->
+            <LinearLayout
+                android:id="@+id/layoutGanttSection"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:background="@color/primary_light">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="6dp"
+                    android:gravity="center_vertical"
+                    android:background="@color/surface">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TASK ID &amp; PHASE"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SCHEDULE PROGRESS"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvGanttTasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingVertical="4dp"
+                    android:paddingBottom="80dp" />
+            </LinearLayout>
+
+            <!-- Milestones List Section -->
+            <LinearLayout
+                android:id="@+id/layoutMilestonesSection"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Sprint / Hackathon Countdown Widget Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSprintCountdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="6dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:background="@color/primary_light">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/tvCountdownCategory"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_badge_task"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="3dp"
+                                android:text="SIH SPRINT ROADMAP"
+                                android:textColor="@color/primary_dark"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <View
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <TextView
+                                android:id="@+id/tvCountdownDays"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="⏳ 12 Days Left"
+                                android:textColor="@color/primary_dark"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
                         <TextView
-                            android:id="@+id/tvCountdownCategory"
+                            android:id="@+id/tvCountdownTargetDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_badge_task"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="3dp"
-                            android:text="SIH SPRINT ROADMAP"
-                            android:textColor="@color/primary_dark"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
+                            android:layout_marginTop="6dp"
+                            android:text="Sprint Target: Dec 15, 2026"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
 
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
+                        <ProgressBar
+                            android:id="@+id/pbMilestonesRoadmap"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginTop="10dp"
+                            android:max="100"
+                            android:progressTint="@color/status_done" />
 
                         <TextView
-                            android:id="@+id/tvCountdownDays"
+                            android:id="@+id/tvMilestonesRatio"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="⏳ 12 Days Left"
-                            android:textColor="@color/primary_dark"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:layout_marginTop="4dp"
+                            android:text="0 of 0 Milestones Reached"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                    <TextView
-                        android:id="@+id/tvCountdownTargetDate"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Sprint Target: Dec 15, 2026"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                    <ProgressBar
-                        android:id="@+id/pbMilestonesRoadmap"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="10dp"
-                        android:max="100"
-                        android:progressTint="@color/status_done" />
-
-                    <TextView
-                        android:id="@+id/tvMilestonesRatio"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="0 of 0 Milestones Reached"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvMilestones"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingVertical="4dp"
-                android:paddingBottom="80dp" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvMilestones"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingVertical="4dp"
+                    android:paddingBottom="80dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Tab 3: Files & Code Snippets View -->
@@ -720,6 +809,51 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
                             android:layout_marginTop="10dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Timesheet & Work Hours Card (Zoho Projects Feature) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⏱️ Timesheet &amp; Work Hours Logged"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvTotalHoursLogged"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:text="0.0 total hours logged" />
+
+                        <TextView
+                            android:id="@+id/tvPhaseHoursBreakdown"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:text="Planning: 0h • Design: 0h • Dev: 0h • Review: 0h" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
