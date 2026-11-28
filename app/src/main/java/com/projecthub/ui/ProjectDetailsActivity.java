@@ -54,6 +54,7 @@ import com.projecthub.adapters.MilestoneAdapter;
 import com.projecthub.adapters.TaskAdapter;
 import com.projecthub.adapters.WorkflowAutomationAdapter;
 import com.projecthub.models.ChatMessage;
+import com.projecthub.models.Conversation;
 import com.projecthub.models.FileReference;
 import com.projecthub.models.GitHubItem;
 import com.projecthub.models.Milestone;
@@ -61,8 +62,10 @@ import com.projecthub.models.Project;
 import com.projecthub.models.Task;
 import com.projecthub.models.User;
 import com.projecthub.models.WorkflowRule;
+import com.projecthub.repository.ChatRepository;
 import com.projecthub.repository.GitHubRepository;
 import com.projecthub.repository.ProjectRepository;
+import com.projecthub.utils.ConversationUtils;
 import com.projecthub.utils.MentionParser;
 import com.projecthub.utils.NotificationHelper;
 import com.projecthub.utils.WorkflowAutomationEngine;
@@ -1250,31 +1253,59 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     }
 
     private void showTeamMembersDialog() {
-        StringBuilder sb = new StringBuilder();
         Map<String, String> rolesMap = currentProject != null && currentProject.getMembers() != null
                 ? currentProject.getMembers() : new HashMap<>();
 
         if (projectMembersList.isEmpty()) {
-            sb.append("Loading member profiles...");
-        } else {
-            for (User u : projectMembersList) {
-                String projRole = rolesMap.getOrDefault(u.getUserId(), "MEMBER");
-                String verified = u.isCampusVerified() ? " ✓" : "";
-                sb.append("• ").append(u.getName() != null ? u.getName() : u.getEmail()).append(verified)
-                  .append(" [").append(projRole).append("]\n");
-                if (u.getDepartment() != null && !u.getDepartment().isEmpty()) {
-                    sb.append("   Dept: ").append(u.getDepartment());
-                }
-                if (u.getSkills() != null && !u.getSkills().isEmpty()) {
-                    sb.append(" | Skills: ").append(TextUtils.join(", ", u.getSkills()));
-                }
-                sb.append("\n\n");
-            }
+            new AlertDialog.Builder(this)
+                .setTitle("Project Team & Mentors (0)")
+                .setMessage("Loading member profiles...")
+                .setPositiveButton("Close", null)
+                .show();
+            return;
+        }
+
+        FirebaseUser fbUser = FirebaseAuth.getInstance().getCurrentUser();
+        String myUid = fbUser != null ? fbUser.getUid() : "";
+        String[] labels = new String[projectMembersList.size()];
+        for (int i = 0; i < projectMembersList.size(); i++) {
+            User u = projectMembersList.get(i);
+            String projRole = rolesMap.getOrDefault(u.getUserId(), "MEMBER");
+            String verified = u.isCampusVerified() ? " ✓" : "";
+            String name = u.getName() != null && !u.getName().isEmpty() ? u.getName() : u.getEmail();
+            String actionHint = u.getUserId().equals(myUid) ? " (You)" : " — Tap to Message";
+            String dept = u.getDepartment() != null && !u.getDepartment().isEmpty() ? " • " + u.getDepartment() : "";
+            labels[i] = name + verified + " [" + projRole + "]" + dept + actionHint;
         }
 
         new AlertDialog.Builder(this)
             .setTitle("Project Team & Mentors (" + projectMembersList.size() + ")")
-            .setMessage(sb.toString().trim())
+            .setItems(labels, (d, which) -> {
+                User picked = projectMembersList.get(which);
+                if (picked.getUserId() == null || picked.getUserId().equals(myUid) || fbUser == null) return;
+                User me = new User(
+                    myUid,
+                    resolveCurrentUserDisplayName(fbUser),
+                    fbUser.getEmail() != null ? fbUser.getEmail() : "",
+                    "",
+                    ""
+                );
+                new ChatRepository().getOrCreateDirectChat(me, picked, new ChatRepository.ConversationCallback() {
+                    @Override
+                    public void onSuccess(Conversation conversation) {
+                        Intent intent = new Intent(ProjectDetailsActivity.this, ChatRoomActivity.class);
+                        intent.putExtra("CONVERSATION_ID", conversation.getConversationId());
+                        intent.putExtra("CONVERSATION_TITLE",
+                            ConversationUtils.resolveDisplayTitle(conversation, myUid));
+                        startActivity(intent);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(ProjectDetailsActivity.this, "Error opening chat: " + message, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            })
             .setPositiveButton("Close", null)
             .show();
     }

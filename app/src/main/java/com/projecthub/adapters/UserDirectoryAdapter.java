@@ -24,13 +24,24 @@ public class UserDirectoryAdapter extends RecyclerView.Adapter<UserDirectoryAdap
         void onInviteClick(User user);
     }
 
+    public interface OnUserMessageListener {
+        void onMessageClick(User user);
+    }
+
     private List<User> users = new ArrayList<>();
     private final String currentUserId;
     private final OnUserInviteListener listener;
+    private final OnUserMessageListener messageListener;
 
     public UserDirectoryAdapter(String currentUserId, OnUserInviteListener listener) {
+        this(currentUserId, listener, null);
+    }
+
+    public UserDirectoryAdapter(String currentUserId, OnUserInviteListener listener,
+                                OnUserMessageListener messageListener) {
         this.currentUserId = currentUserId != null ? currentUserId : "";
         this.listener = listener;
+        this.messageListener = messageListener;
     }
 
     public void setUsers(List<User> users) {
@@ -86,13 +97,19 @@ public class UserDirectoryAdapter extends RecyclerView.Adapter<UserDirectoryAdap
         }
 
         if (currentUserId.equals(user.getUserId())) {
-            holder.btnInvite.setVisibility(View.GONE);
+            holder.layoutActions.setVisibility(View.GONE);
         } else {
-            holder.btnInvite.setVisibility(View.VISIBLE);
-            holder.btnInvite.setText(isFaculty ? "Invite as Faculty Mentor" : "Invite to Project");
+            holder.layoutActions.setVisibility(View.VISIBLE);
+            holder.btnInvite.setText(isFaculty ? "Invite Mentor" : "Invite");
             holder.btnInvite.setOnClickListener(v -> {
                 if (listener != null) listener.onInviteClick(user);
             });
+            if (holder.btnMessage != null) {
+                holder.btnMessage.setVisibility(messageListener != null ? View.VISIBLE : View.GONE);
+                holder.btnMessage.setOnClickListener(v -> {
+                    if (messageListener != null) messageListener.onMessageClick(user);
+                });
+            }
         }
     }
 
@@ -103,7 +120,8 @@ public class UserDirectoryAdapter extends RecyclerView.Adapter<UserDirectoryAdap
 
     static class UserViewHolder extends RecyclerView.ViewHolder {
         TextView tvAvatar, tvName, tvVerified, tvMeta, tvRole, tvSkills, tvBio;
-        MaterialButton btnInvite;
+        MaterialButton btnInvite, btnMessage;
+        View layoutActions;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -115,6 +133,8 @@ public class UserDirectoryAdapter extends RecyclerView.Adapter<UserDirectoryAdap
             tvSkills = itemView.findViewById(R.id.tvDirectorySkills);
             tvBio = itemView.findViewById(R.id.tvDirectoryBio);
             btnInvite = itemView.findViewById(R.id.btnInviteToProject);
+            btnMessage = itemView.findViewById(R.id.btnMessageUser);
+            layoutActions = itemView.findViewById(R.id.layoutDirectoryActions);
         }
     }
 }

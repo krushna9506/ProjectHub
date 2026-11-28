@@ -7,6 +7,7 @@ export default function ExploreCampus({
   campusUsers,
   myProjects,
   currentUser,
+  onMessageUser,
 }) {
   const [tab, setTab] = useState('PROJECTS');
   const [queryText, setQueryText] = useState('');
@@ -169,14 +170,24 @@ export default function ExploreCampus({
                 </div>
               )}
               {u.userId !== currentUser.uid && (
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  style={{ marginTop: 8 }}
-                  onClick={() => inviteUser(u)}
-                >
-                  Invite to Project
-                </button>
+                <div className="row" style={{ marginTop: 8 }}>
+                  {onMessageUser && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => onMessageUser(u)}
+                    >
+                      Message
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => inviteUser(u)}
+                  >
+                    Invite to Project
+                  </button>
+                </div>
               )}
             </div>
           ))}

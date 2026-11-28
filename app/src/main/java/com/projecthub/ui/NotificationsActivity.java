@@ -70,12 +70,20 @@ public class NotificationsActivity extends AppCompatActivity {
                 dashboardViewModel.markNotificationAsRead(currentUserId, notification.getNotificationId());
             }
 
-            // Open project if associated
-            if (notification.getProjectId() != null && !notification.getProjectId().isEmpty()) {
-                Intent intent = new Intent(this, ProjectDetailsActivity.class);
-                intent.putExtra("PROJECT_ID", notification.getProjectId());
-                intent.putExtra("PROJECT_TITLE", notification.getProjectTitle());
-                startActivity(intent);
+            String notifType = notification.getType() != null ? notification.getType() : "";
+            String targetId = notification.getProjectId();
+            if (targetId != null && !targetId.isEmpty()) {
+                if ("DM".equalsIgnoreCase(notifType) || "GROUP_CHAT".equalsIgnoreCase(notifType)) {
+                    Intent intent = new Intent(this, ChatRoomActivity.class);
+                    intent.putExtra("CONVERSATION_ID", targetId);
+                    intent.putExtra("CONVERSATION_TITLE", notification.getProjectTitle());
+                    startActivity(intent);
+                } else {
+                    Intent intent = new Intent(this, ProjectDetailsActivity.class);
+                    intent.putExtra("PROJECT_ID", targetId);
+                    intent.putExtra("PROJECT_TITLE", notification.getProjectTitle());
+                    startActivity(intent);
+                }
             }
         });
 

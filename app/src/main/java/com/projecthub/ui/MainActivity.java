@@ -30,9 +30,12 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.projecthub.R;
 import com.projecthub.adapters.ProjectAdapter;
 import com.projecthub.models.AppNotification;
+import com.projecthub.models.Conversation;
+import com.projecthub.utils.ConversationUtils;
 import com.projecthub.utils.DeadlineReminderWorker;
 import com.projecthub.utils.NotificationHelper;
 import com.projecthub.viewmodel.AuthViewModel;
+import com.projecthub.viewmodel.ChatViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
 
 import java.util.concurrent.TimeUnit;
@@ -41,14 +44,15 @@ public class MainActivity extends AppCompatActivity {
 
     private AuthViewModel authViewModel;
     private DashboardViewModel dashboardViewModel;
+    private ChatViewModel chatViewModel;
     private ProjectAdapter projectAdapter;
 
-    private TextView tvGreeting, tvStudentInfo, tvUserAvatar, tvProjectCountBadge, tvNotificationBadge;
+    private TextView tvGreeting, tvStudentInfo, tvUserAvatar, tvProjectCountBadge, tvNotificationBadge, tvChatUnreadBadge;
     private View layoutEmptyProjects, layoutHeaderProfile;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
     private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
-    private ImageButton btnLogout, btnNotifications;
+    private ImageButton btnLogout, btnNotifications, btnChats;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btnLogout);
         btnNotifications = findViewById(R.id.btnNotifications);
         tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
+        btnChats = findViewById(R.id.btnChats);
+        tvChatUnreadBadge = findViewById(R.id.tvChatUnreadBadge);
 
         NotificationHelper.createNotificationChannel(this);
         checkNotificationPermission();
@@ -80,12 +86,16 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(MainActivity.this, ProfileActivity.class)));
         }
 
+        btnChats.setOnClickListener(v ->
+            startActivity(new Intent(MainActivity.this, ChatsActivity.class)));
+
         btnNotifications.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, NotificationsActivity.class));
         });
 
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
+        chatViewModel = new ViewModelProvider(this).get(ChatViewModel.class);
 
         projectAdapter = new ProjectAdapter(project -> {
             Intent intent = new Intent(MainActivity.this, ProjectDetailsActivity.class);
@@ -114,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 loadProjects(user.getUserId());
                 registerFcmToken(user.getUserId());
                 observeNotifications(user.getUserId());
+                observeUnreadChats(user.getUserId());
             }
         });
 
@@ -205,6 +216,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 tvNotificationBadge.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void observeUnreadChats(String userId) {
+        chatViewModel.getConversations(userId).observe(this, list -> {
+            if (tvChatUnreadBadge == null) return;
+            int unreadCount = 0;
+            if (list != null) {
+                for (Conversation c : list) {
+                    if (ConversationUtils.isUnread(c, userId)) {
+                        unreadCount++;
+                    }
+                }
+            }
+            if (unreadCount > 0) {
+                tvChatUnreadBadge.setVisibility(View.VISIBLE);
+                tvChatUnreadBadge.setText(unreadCount > 9 ? "9+" : String.valueOf(unreadCount));
+            } else {
+                tvChatUnreadBadge.setVisibility(View.GONE);
             }
         });
     }

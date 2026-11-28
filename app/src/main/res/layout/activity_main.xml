@@ -75,6 +75,37 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Messages Inbox Button (48dp touch target) -->
+            <FrameLayout
+                android:layout_width="48dp"
+                android:layout_height="48dp">
+
+                <ImageButton
+                    android:id="@+id/btnChats"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_chat"
+                    android:padding="12dp"
+                    android:contentDescription="Messages" />
+
+                <TextView
+                    android:id="@+id/tvChatUnreadBadge"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:backgroundTint="@color/primary"
+                    android:textColor="@color/on_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:visibility="gone"
+                    android:text="1" />
+            </FrameLayout>
+
             <!-- Notification Bell (48dp touch target) -->
             <FrameLayout
                 android:layout_width="48dp"

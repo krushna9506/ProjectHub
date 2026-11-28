@@ -68,6 +68,14 @@
             android:name=".ui.ProfileActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.ChatsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.ChatRoomActivity"
+            android:exported="false" />
+
         <!-- Firebase Cloud Messaging Service -->
         <service
             android:name=".service.ProjectHubMessagingService"

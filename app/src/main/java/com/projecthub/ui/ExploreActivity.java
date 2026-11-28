@@ -1,5 +1,6 @@
 package com.projecthub.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -23,10 +24,14 @@ import com.google.firebase.auth.FirebaseUser;
 import com.projecthub.R;
 import com.projecthub.adapters.ExploreAdapter;
 import com.projecthub.adapters.UserDirectoryAdapter;
+import com.projecthub.models.Conversation;
 import com.projecthub.models.JoinRequest;
 import com.projecthub.models.Project;
 import com.projecthub.models.User;
+import com.projecthub.repository.ChatRepository;
+import com.projecthub.utils.ConversationUtils;
 import com.projecthub.viewmodel.AuthViewModel;
+import com.projecthub.viewmodel.ChatViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
 
 import java.util.ArrayList;
@@ -37,6 +42,7 @@ public class ExploreActivity extends AppCompatActivity {
 
     private DashboardViewModel dashboardViewModel;
     private AuthViewModel authViewModel;
+    private ChatViewModel chatViewModel;
     private ExploreAdapter exploreAdapter;
     private UserDirectoryAdapter userDirectoryAdapter;
 
@@ -96,12 +102,13 @@ public class ExploreActivity extends AppCompatActivity {
         rvExploreProjects.setLayoutManager(new LinearLayoutManager(this));
         rvExploreProjects.setAdapter(exploreAdapter);
 
-        userDirectoryAdapter = new UserDirectoryAdapter(userId, this::showInviteUserDialog);
+        userDirectoryAdapter = new UserDirectoryAdapter(userId, this::showInviteUserDialog, this::startDirectChatWithUser);
         rvCampusUsers.setLayoutManager(new LinearLayoutManager(this));
         rvCampusUsers.setAdapter(userDirectoryAdapter);
 
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
         authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        chatViewModel = new ViewModelProvider(this).get(ChatViewModel.class);
 
         authViewModel.fetchCurrentUserProfile();
         authViewModel.getCurrentUser().observe(this, u -> currentUserProfile = u);
@@ -334,6 +341,34 @@ public class ExploreActivity extends AppCompatActivity {
             })
             .setNegativeButton("Cancel", null)
             .show();
+    }
+
+    private void startDirectChatWithUser(User targetUser) {
+        FirebaseUser fbUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (fbUser == null || targetUser == null) return;
+        User me = currentUserProfile;
+        if (me == null) {
+            String fallbackName = fbUser.getDisplayName() != null && !fbUser.getDisplayName().isEmpty()
+                    ? fbUser.getDisplayName()
+                    : (fbUser.getEmail() != null ? fbUser.getEmail().split("@")[0] : "Member");
+            me = new User(fbUser.getUid(), fallbackName, fbUser.getEmail() != null ? fbUser.getEmail() : "", "", "");
+        }
+        String myUid = fbUser.getUid();
+        chatViewModel.getOrCreateDirectChat(me, targetUser, new ChatRepository.ConversationCallback() {
+            @Override
+            public void onSuccess(Conversation conversation) {
+                Intent intent = new Intent(ExploreActivity.this, ChatRoomActivity.class);
+                intent.putExtra("CONVERSATION_ID", conversation.getConversationId());
+                intent.putExtra("CONVERSATION_TITLE",
+                    ConversationUtils.resolveDisplayTitle(conversation, myUid));
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(ExploreActivity.this, "Could not open chat: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showSendRequestDialog(Project project) {

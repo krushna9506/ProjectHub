@@ -106,6 +106,14 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.tvIcon.setText("M");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.issue_feature));
                 break;
+            case "DM":
+                holder.tvIcon.setText("DM");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.primary));
+                break;
+            case "GROUP_CHAT":
+                holder.tvIcon.setText("GC");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.accent));
+                break;
             case "CALL":
                 holder.tvIcon.setText("VC");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.priority_urgent));

@@ -22,6 +22,7 @@ import CalendarRoadmap from './components/CalendarRoadmap.jsx';
 import GitHubPanel from './components/GitHubPanel.jsx';
 import FilesPanel from './components/FilesPanel.jsx';
 import ExploreCampus from './components/ExploreCampus.jsx';
+import MessagesPanel, { isConversationUnread } from './components/MessagesPanel.jsx';
 
 const TEMPLATES = {
   BLANK: { category: 'General', days: 30, lookingFor: '' },
@@ -87,7 +88,9 @@ export default function App() {
   const [campusUsers, setCampusUsers] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [activeTab, setActiveTab] = useState('KANBAN');
-  const [viewMode, setViewMode] = useState('WORKSPACE'); // 'WORKSPACE' or 'EXPLORE'
+  const [viewMode, setViewMode] = useState('WORKSPACE'); // 'WORKSPACE' | 'MESSAGES' | 'EXPLORE'
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversationId, setSelectedConversationId] = useState('');
 
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -143,10 +146,25 @@ export default function App() {
       setCampusUsers(snap.docs.map((d) => ({ userId: d.id, ...d.data() })));
     });
 
+    const unsubConversations = onSnapshot(
+      query(collection(db, 'conversations'), where('participantIds', 'array-contains', user.uid)),
+      (snap) => {
+        const list = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort(
+            (a, b) =>
+              Math.max(b.lastMessageTimestamp || 0, b.createdAt || 0) -
+              Math.max(a.lastMessageTimestamp || 0, a.createdAt || 0)
+          );
+        setConversations(list);
+      }
+    );
+
     return () => {
       unsubProjects();
       unsubPublic();
       unsubUsers();
+      unsubConversations();
     };
   }, [user]);
 
@@ -235,6 +253,44 @@ export default function App() {
       unsubOwnFiles();
     };
   }, [currentProject?.id, user?.uid]);
+
+  async function openOrCreateDirectChat(otherUser) {
+    if (!user || !otherUser?.userId || otherUser.userId === user.uid || !db) return;
+    const myUid = user.uid;
+    const otherUid = otherUser.userId;
+    const sorted = myUid < otherUid ? [myUid, otherUid] : [otherUid, myUid];
+    const dmId = `dm_${sorted[0]}_${sorted[1]}`;
+    const convRef = doc(db, 'conversations', dmId);
+    const snap = await getDoc(convRef);
+    if (!snap.exists()) {
+      const now = Date.now();
+      const myName = user.displayName || user.email?.split('@')[0] || 'Member';
+      const otherName =
+        otherUser.name || (otherUser.email ? otherUser.email.split('@')[0] : 'Member');
+      await setDoc(convRef, {
+        conversationId: dmId,
+        type: 'DIRECT',
+        title: '',
+        description: '',
+        createdBy: myUid,
+        participantIds: sorted,
+        participantNames: { [myUid]: myName, [otherUid]: otherName },
+        participantEmails: { [myUid]: user.email || '', [otherUid]: otherUser.email || '' },
+        lastMessage: '',
+        lastMessageSenderId: '',
+        lastMessageSenderName: '',
+        lastMessageTimestamp: now,
+        createdAt: now,
+        readBy: { [myUid]: now },
+      });
+    }
+    setSelectedConversationId(dmId);
+    setViewMode('MESSAGES');
+  }
+
+  const unreadConversationsCount = conversations.filter((c) =>
+    isConversationUnread(c, user?.uid)
+  ).length;
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -355,6 +411,22 @@ export default function App() {
             Workspace
           </button>
           <button
+            className={`btn btn-sm ${viewMode === 'MESSAGES' ? 'btn-primary' : ''}`}
+            onClick={() => {
+              setViewMode('MESSAGES');
+              if (!selectedConversationId && conversations.length > 0) {
+                setSelectedConversationId(conversations[0].id);
+              }
+            }}
+          >
+            Messages
+            {unreadConversationsCount > 0 && (
+              <span className="pill pill-accent" style={{ padding: '1px 6px', fontSize: 10 }}>
+                {unreadConversationsCount}
+              </span>
+            )}
+          </button>
+          <button
             className={`btn btn-sm ${viewMode === 'EXPLORE' ? 'btn-primary' : ''}`}
             onClick={() => setViewMode('EXPLORE')}
           >
@@ -369,12 +441,22 @@ export default function App() {
       </header>
 
       <div className="container">
-        {viewMode === 'EXPLORE' ? (
+        {viewMode === 'MESSAGES' ? (
+          <MessagesPanel
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={setSelectedConversationId}
+            campusUsers={campusUsers}
+            currentUser={user}
+            onOpenDirectChat={openOrCreateDirectChat}
+          />
+        ) : viewMode === 'EXPLORE' ? (
           <ExploreCampus
             publicProjects={publicProjects}
             campusUsers={campusUsers}
             myProjects={projects}
             currentUser={user}
+            onMessageUser={openOrCreateDirectChat}
           />
         ) : (
           <>

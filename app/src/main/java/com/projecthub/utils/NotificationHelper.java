@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.projecthub.models.AppNotification;
+import com.projecthub.ui.ChatRoomActivity;
 import com.projecthub.ui.MainActivity;
 import com.projecthub.ui.ProjectDetailsActivity;
 
@@ -59,7 +60,14 @@ public class NotificationHelper {
         createNotificationChannel(context);
 
         Intent intent;
-        if (projectId != null && !projectId.isEmpty()) {
+        if (("DM".equalsIgnoreCase(type) || "GROUP_CHAT".equalsIgnoreCase(type))
+                && projectId != null && !projectId.isEmpty()) {
+            intent = new Intent(context, ChatRoomActivity.class);
+            intent.putExtra("CONVERSATION_ID", projectId);
+            if (title != null && !title.isEmpty()) {
+                intent.putExtra("CONVERSATION_TITLE", title);
+            }
+        } else if (projectId != null && !projectId.isEmpty()) {
             intent = new Intent(context, ProjectDetailsActivity.class);
             intent.putExtra("PROJECT_ID", projectId);
         } else {
