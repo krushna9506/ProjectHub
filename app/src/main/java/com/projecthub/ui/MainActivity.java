@@ -19,9 +19,6 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -31,14 +28,12 @@ import com.projecthub.R;
 import com.projecthub.adapters.ProjectAdapter;
 import com.projecthub.models.AppNotification;
 import com.projecthub.models.Conversation;
+import com.projecthub.utils.AppPreferences;
 import com.projecthub.utils.ConversationUtils;
-import com.projecthub.utils.DeadlineReminderWorker;
 import com.projecthub.utils.NotificationHelper;
 import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.ChatViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
-
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,8 +46,8 @@ public class MainActivity extends AppCompatActivity {
     private View layoutEmptyProjects, layoutHeaderProfile;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
-    private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
-    private ImageButton btnLogout, btnNotifications, btnChats;
+    private MaterialButton btnCreateProject, btnExploreCampus, btnEmptyJoinCode;
+    private ImageButton btnSettings, btnNotifications, btnChats;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,10 +63,9 @@ public class MainActivity extends AppCompatActivity {
         pbLoading = findViewById(R.id.pbLoading);
         rvProjects = findViewById(R.id.rvProjects);
         btnCreateProject = findViewById(R.id.btnCreateProject);
-        btnJoinProject = findViewById(R.id.btnJoinProject);
         btnExploreCampus = findViewById(R.id.btnExploreCampus);
-        btnManageRequests = findViewById(R.id.btnManageRequests);
-        btnLogout = findViewById(R.id.btnLogout);
+        btnEmptyJoinCode = findViewById(R.id.btnEmptyJoinCode);
+        btnSettings = findViewById(R.id.btnSettings);
         btnNotifications = findViewById(R.id.btnNotifications);
         tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
         btnChats = findViewById(R.id.btnChats);
@@ -143,19 +137,12 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, ExploreActivity.class));
         });
 
-        btnManageRequests.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, ManageRequestsActivity.class));
-        });
+        if (btnEmptyJoinCode != null) {
+            btnEmptyJoinCode.setOnClickListener(v -> showJoinProjectDialog());
+        }
 
-        btnJoinProject.setOnClickListener(v -> showJoinProjectDialog());
-
-        btnLogout.setOnClickListener(v -> {
-            authViewModel.logout();
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
+        btnSettings.setOnClickListener(v ->
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class)));
     }
 
     private void loadProjects(String userId) {
@@ -241,14 +228,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void scheduleDeadlineWorker() {
-        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
-            DeadlineReminderWorker.class, 12, TimeUnit.HOURS)
-            .build();
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "projecthub_deadline_alerts",
-            ExistingPeriodicWorkPolicy.KEEP,
-            request
-        );
+        AppPreferences.syncDeadlineReminderSchedule(this);
     }
 
     private void checkNotificationPermission() {

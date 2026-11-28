@@ -47,6 +47,7 @@ import java.util.Set;
 public class ProjectRepository {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final List<ListenerRegistration> activeListeners = new ArrayList<>();
+    private final List<ListenerRegistration> fileListeners = new ArrayList<>();
 
     public interface OperationCallback {
         void onSuccess();
@@ -66,6 +67,16 @@ public class ProjectRepository {
             }
         }
         activeListeners.clear();
+        clearFileListeners();
+    }
+
+    private void clearFileListeners() {
+        for (ListenerRegistration reg : fileListeners) {
+            if (reg != null) {
+                reg.remove();
+            }
+        }
+        fileListeners.clear();
     }
 
     private void trackListener(ListenerRegistration reg) {
@@ -109,6 +120,7 @@ public class ProjectRepository {
         MutableLiveData<List<Project>> projectsLiveData = new MutableLiveData<>();
 
         ListenerRegistration reg = db.collection("projects")
+            .whereEqualTo("isPublic", true)
             .addSnapshotListener((snapshots, error) -> {
                 if (error != null || snapshots == null) {
                     projectsLiveData.setValue(new ArrayList<>());
@@ -121,12 +133,7 @@ public class ProjectRepository {
                         if (p.getProjectId() == null || p.getProjectId().isEmpty()) {
                             p.setProjectId(doc.getId());
                         }
-                        boolean isPublicFlag = p.isPublic()
-                                || Boolean.TRUE.equals(doc.getBoolean("public"))
-                                || Boolean.TRUE.equals(doc.getBoolean("isPublic"));
-                        if (isPublicFlag) {
-                            list.add(p);
-                        }
+                        list.add(p);
                     }
                 }
                 projectsLiveData.setValue(list);
@@ -143,6 +150,9 @@ public class ProjectRepository {
         DocumentReference docRef = db.collection("projects").document();
         String projectId = docRef.getId();
         project.setProjectId(projectId);
+        if (project.getJoinCode() != null) {
+            project.setJoinCode(project.getJoinCode().trim().toUpperCase());
+        }
         String effectiveTemplate = (templateType != null && !templateType.isEmpty())
                 ? templateType : ProjectTemplates.TEMPLATE_BLANK;
         project.setTemplateType(effectiveTemplate);
@@ -156,6 +166,16 @@ public class ProjectRepository {
 
                 ProjectTemplates.TemplateSpec spec = ProjectTemplates.getTemplate(effectiveTemplate);
                 WriteBatch batch = db.batch();
+
+                String cleanCode = project.getJoinCode() != null ? project.getJoinCode().trim().toUpperCase() : "";
+                if (cleanCode.length() >= 6) {
+                    Map<String, Object> codeDoc = new HashMap<>();
+                    codeDoc.put("joinCode", cleanCode);
+                    codeDoc.put("projectId", projectId);
+                    codeDoc.put("leadId", project.getLeadId());
+                    codeDoc.put("createdAt", project.getCreatedAt() > 0 ? project.getCreatedAt() : System.currentTimeMillis());
+                    batch.set(db.collection("join_codes").document(cleanCode), codeDoc);
+                }
 
                 for (Milestone m : spec.milestones) {
                     DocumentReference mRef = docRef.collection("milestones").document();
@@ -193,49 +213,66 @@ public class ProjectRepository {
 
     public void joinProjectWithCode(String userId, String joinCode, OperationCallback callback) {
         String cleanCode = joinCode != null ? joinCode.trim() : "";
-        if (cleanCode.isEmpty()) {
-            callback.onError("Please enter a valid project join code.");
+        if (cleanCode.isEmpty() || userId == null || userId.isEmpty()) {
+            if (callback != null) callback.onError("Please enter a valid project join code.");
             return;
         }
 
         String upperCode = cleanCode.toUpperCase();
-        db.collection("projects")
-            .whereEqualTo("joinCode", upperCode)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                if (querySnapshot.isEmpty()) {
-                    db.collection("projects")
-                        .whereEqualTo("joinCode", cleanCode)
-                        .get()
-                        .addOnSuccessListener(snap2 -> {
-                            if (snap2.isEmpty()) {
-                                callback.onError("No project found with code: " + upperCode);
-                            } else {
-                                processJoinDocument(snap2.getDocuments().get(0), userId, callback);
-                            }
-                        })
-                        .addOnFailureListener(e -> callback.onError("Failed to search code: " + e.getMessage()));
-                    return;
+        db.collection("join_codes").document(upperCode).get()
+            .addOnSuccessListener(codeSnap -> {
+                if (codeSnap != null && codeSnap.exists()) {
+                    String projectId = codeSnap.getString("projectId");
+                    String resolvedCode = codeSnap.getString("joinCode");
+                    if (projectId != null && !projectId.isEmpty()) {
+                        processJoinByIdAndCode(
+                            db.collection("projects").document(projectId),
+                            resolvedCode != null ? resolvedCode : upperCode,
+                            userId,
+                            callback
+                        );
+                        return;
+                    }
                 }
-
-                processJoinDocument(querySnapshot.getDocuments().get(0), userId, callback);
+                // Fallback for legacy public projects created before join_codes existed
+                db.collection("projects")
+                    .whereEqualTo("isPublic", true)
+                    .whereEqualTo("joinCode", upperCode)
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        if (snap.isEmpty()) {
+                            if (callback != null) callback.onError("No project found with code: " + upperCode);
+                        } else {
+                            DocumentSnapshot projDoc = snap.getDocuments().get(0);
+                            processJoinByIdAndCode(projDoc.getReference(), upperCode, userId, callback);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (callback != null) callback.onError("Failed to find project: " + e.getMessage());
+                    });
             })
-            .addOnFailureListener(e -> callback.onError("Failed to find project: " + e.getMessage()));
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError("Failed to find project: " + e.getMessage());
+            });
     }
 
-    private void processJoinDocument(DocumentSnapshot doc, String userId, OperationCallback callback) {
-        DocumentReference projectRef = doc.getReference();
-        String projectId = doc.getId();
+    private void processJoinByIdAndCode(DocumentReference projectRef, String codeUsed, String userId, OperationCallback callback) {
+        String projectId = projectRef.getId();
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("members." + userId, "MEMBER");
+        updates.put("lastJoinCodeUsed", codeUsed + ":" + userId);
 
-        projectRef.update("members." + userId, "MEMBER")
+        projectRef.update(updates)
             .addOnSuccessListener(aVoid -> {
                 try {
                     db.collection("users").document(userId)
                         .update("joinedProjectIds", FieldValue.arrayUnion(projectId));
                 } catch (Exception ignored) {}
-                callback.onSuccess();
+                if (callback != null) callback.onSuccess();
             })
-            .addOnFailureListener(e -> callback.onError("Failed to join: " + e.getMessage()));
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError("Failed to join: " + e.getMessage());
+            });
     }
 
     public void sendJoinRequest(JoinRequest request, OperationCallback callback) {
@@ -282,7 +319,17 @@ public class ProjectRepository {
             .whereEqualTo("leadId", leadId)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    requestsLiveData.setValue(snapshots.toObjects(JoinRequest.class));
+                    List<JoinRequest> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        JoinRequest r = doc.toObject(JoinRequest.class);
+                        if (r != null) {
+                            if (r.getRequestId() == null || r.getRequestId().isEmpty()) {
+                                r.setRequestId(doc.getId());
+                            }
+                            list.add(r);
+                        }
+                    }
+                    requestsLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -296,7 +343,17 @@ public class ProjectRepository {
             .whereEqualTo("applicantId", applicantId)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    requestsLiveData.setValue(snapshots.toObjects(JoinRequest.class));
+                    List<JoinRequest> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        JoinRequest r = doc.toObject(JoinRequest.class);
+                        if (r != null) {
+                            if (r.getRequestId() == null || r.getRequestId().isEmpty()) {
+                                r.setRequestId(doc.getId());
+                            }
+                            list.add(r);
+                        }
+                    }
+                    requestsLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -304,6 +361,10 @@ public class ProjectRepository {
     }
 
     public void acceptJoinRequest(JoinRequest request, OperationCallback callback) {
+        if (request == null || request.getRequestId() == null || request.getRequestId().isEmpty()) {
+            if (callback != null) callback.onError("Invalid join request ID.");
+            return;
+        }
         db.collection("join_requests").document(request.getRequestId())
             .update("status", "ACCEPTED")
             .addOnSuccessListener(aVoid -> {
@@ -314,14 +375,22 @@ public class ProjectRepository {
                             "Join Request Accepted",
                             "You are now a member of " + (request.getProjectTitle() != null ? request.getProjectTitle() : "the project"),
                             "JOIN_ACCEPTED", request.getProjectId(), request.getProjectTitle());
-                        callback.onSuccess();
+                        if (callback != null) callback.onSuccess();
                     })
-                    .addOnFailureListener(e -> callback.onError("Failed to add member: " + e.getMessage()));
+                    .addOnFailureListener(e -> {
+                        if (callback != null) callback.onError("Failed to add member: " + e.getMessage());
+                    });
             })
-            .addOnFailureListener(e -> callback.onError("Failed to accept request: " + e.getMessage()));
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError("Failed to accept request: " + e.getMessage());
+            });
     }
 
     public void rejectJoinRequest(JoinRequest request, OperationCallback callback) {
+        if (request == null || request.getRequestId() == null || request.getRequestId().isEmpty()) {
+            if (callback != null) callback.onError("Invalid join request ID.");
+            return;
+        }
         db.collection("join_requests").document(request.getRequestId())
             .update("status", "REJECTED")
             .addOnSuccessListener(aVoid -> {
@@ -329,9 +398,11 @@ public class ProjectRepository {
                     "Join Request Update",
                     "Your request to join " + (request.getProjectTitle() != null ? request.getProjectTitle() : "the project") + " was not accepted.",
                     "JOIN_REJECTED", request.getProjectId(), request.getProjectTitle());
-                callback.onSuccess();
+                if (callback != null) callback.onSuccess();
             })
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
     }
 
     public LiveData<Project> getProject(String projectId) {
@@ -515,6 +586,10 @@ public class ProjectRepository {
     }
 
     public void deleteTask(String projectId, String taskId, OperationCallback callback) {
+        if (projectId == null || projectId.isEmpty() || taskId == null || taskId.isEmpty()) {
+            if (callback != null) callback.onError("Invalid task ID.");
+            return;
+        }
         db.collection("projects").document(projectId)
             .collection("tasks").document(taskId)
             .delete()
@@ -603,7 +678,17 @@ public class ProjectRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    commentsLiveData.setValue(snapshots.toObjects(TaskComment.class));
+                    List<TaskComment> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        TaskComment c = doc.toObject(TaskComment.class);
+                        if (c != null) {
+                            if (c.getCommentId() == null || c.getCommentId().isEmpty()) {
+                                c.setCommentId(doc.getId());
+                            }
+                            list.add(c);
+                        }
+                    }
+                    commentsLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -681,7 +766,17 @@ public class ProjectRepository {
             .orderBy("dueDate", Query.Direction.ASCENDING)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    milestonesLiveData.setValue(snapshots.toObjects(Milestone.class));
+                    List<Milestone> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        Milestone m = doc.toObject(Milestone.class);
+                        if (m != null) {
+                            if (m.getMilestoneId() == null || m.getMilestoneId().isEmpty()) {
+                                m.setMilestoneId(doc.getId());
+                            }
+                            list.add(m);
+                        }
+                    }
+                    milestonesLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -728,15 +823,26 @@ public class ProjectRepository {
 
     public void loadProjectFilesForUser(String projectId, String userId, boolean isLead,
                                         MutableLiveData<List<FileReference>> target) {
+        clearFileListeners();
         if (isLead) {
             ListenerRegistration reg = db.collection("projects").document(projectId).collection("files")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (snapshots != null) {
-                        target.setValue(snapshots.toObjects(FileReference.class));
+                        List<FileReference> list = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                            FileReference f = doc.toObject(FileReference.class);
+                            if (f != null) {
+                                if (f.getFileId() == null || f.getFileId().isEmpty()) {
+                                    f.setFileId(doc.getId());
+                                }
+                                list.add(f);
+                            }
+                        }
+                        target.setValue(list);
                     }
                 });
-            trackListener(reg);
+            fileListeners.add(reg);
             return;
         }
 
@@ -759,14 +865,14 @@ public class ProjectRepository {
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
                         FileReference f = doc.toObject(FileReference.class);
                         if (f != null) {
-                            if (f.getFileId() == null) f.setFileId(doc.getId());
+                            if (f.getFileId() == null || f.getFileId().isEmpty()) f.setFileId(doc.getId());
                             sharedMap.put(f.getFileId(), f);
                         }
                     }
                 }
                 emitMerged.run();
             });
-        trackListener(regShared);
+        fileListeners.add(regShared);
 
         if (userId != null && !userId.isEmpty()) {
             ListenerRegistration regOwn = db.collection("projects").document(projectId).collection("files")
@@ -777,14 +883,14 @@ public class ProjectRepository {
                         for (DocumentSnapshot doc : snapshots.getDocuments()) {
                             FileReference f = doc.toObject(FileReference.class);
                             if (f != null) {
-                                if (f.getFileId() == null) f.setFileId(doc.getId());
+                                if (f.getFileId() == null || f.getFileId().isEmpty()) f.setFileId(doc.getId());
                                 ownMap.put(f.getFileId(), f);
                             }
                         }
                     }
                     emitMerged.run();
                 });
-            trackListener(regOwn);
+            fileListeners.add(regOwn);
         }
     }
 
@@ -838,7 +944,17 @@ public class ProjectRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    messagesLiveData.setValue(snapshots.toObjects(ChatMessage.class));
+                    List<ChatMessage> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        ChatMessage m = doc.toObject(ChatMessage.class);
+                        if (m != null) {
+                            if (m.getMessageId() == null || m.getMessageId().isEmpty()) {
+                                m.setMessageId(doc.getId());
+                            }
+                            list.add(m);
+                        }
+                    }
+                    messagesLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -925,7 +1041,17 @@ public class ProjectRepository {
             .collection("automations")
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    rulesLiveData.setValue(snapshots.toObjects(WorkflowRule.class));
+                    List<WorkflowRule> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        WorkflowRule r = doc.toObject(WorkflowRule.class);
+                        if (r != null) {
+                            if (r.getRuleId() == null || r.getRuleId().isEmpty()) {
+                                r.setRuleId(doc.getId());
+                            }
+                            list.add(r);
+                        }
+                    }
+                    rulesLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -947,12 +1073,17 @@ public class ProjectRepository {
     }
 
     public void toggleAutomationRule(String projectId, String ruleId, boolean enabled) {
+        if (projectId == null || projectId.isEmpty() || ruleId == null || ruleId.isEmpty()) return;
         db.collection("projects").document(projectId)
             .collection("automations").document(ruleId)
             .update("enabled", enabled);
     }
 
     public void deleteAutomationRule(String projectId, String ruleId, OperationCallback callback) {
+        if (projectId == null || projectId.isEmpty() || ruleId == null || ruleId.isEmpty()) {
+            if (callback != null) callback.onError("Invalid automation rule ID.");
+            return;
+        }
         db.collection("projects").document(projectId)
             .collection("automations").document(ruleId)
             .delete()
@@ -1088,7 +1219,17 @@ public class ProjectRepository {
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener((snapshots, error) -> {
                 if (snapshots != null) {
-                    notificationsLiveData.setValue(snapshots.toObjects(AppNotification.class));
+                    List<AppNotification> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        AppNotification n = doc.toObject(AppNotification.class);
+                        if (n != null) {
+                            if (n.getNotificationId() == null || n.getNotificationId().isEmpty()) {
+                                n.setNotificationId(doc.getId());
+                            }
+                            list.add(n);
+                        }
+                    }
+                    notificationsLiveData.setValue(list);
                 }
             });
         trackListener(reg);
@@ -1096,6 +1237,7 @@ public class ProjectRepository {
     }
 
     public void markNotificationAsRead(String userId, String notificationId) {
+        if (userId == null || userId.isEmpty() || notificationId == null || notificationId.isEmpty()) return;
         db.collection("users").document(userId)
             .collection("notifications").document(notificationId)
             .update("read", true);

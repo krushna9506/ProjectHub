@@ -28,6 +28,15 @@ public class NotificationHelper {
     public static final String CHANNEL_DESC = "Notifications for tasks, mentions, comments, join requests, and deadlines";
     private static final String PREFS_NAME = "projecthub_notified_keys";
 
+    public static void clearNotificationDedupCache(Context context) {
+        if (context == null) return;
+        context.getApplicationContext()
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .apply();
+    }
+
     public static boolean shouldNotifyOnce(Context context, String key) {
         if (context == null || key == null || key.isEmpty()) return false;
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -57,6 +66,7 @@ public class NotificationHelper {
 
     public static void showSystemNotification(Context context, String title, String body, 
                                              String projectId, String type) {
+        if (context == null || !AppPreferences.isSystemNotificationsEnabled(context)) return;
         createNotificationChannel(context);
 
         Intent intent;

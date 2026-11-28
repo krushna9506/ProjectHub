@@ -17,7 +17,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enter the 6-character code shared by your Team Lead"
+        android:text="Enter the invite code shared by your Team Lead"
         android:textColor="@color/text_secondary"
         android:layout_marginTop="4dp"
         android:textSize="13sp" />
@@ -32,8 +32,8 @@
             android:id="@+id/etJoinCode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Join Code (e.g. AB12CD)"
+            android:hint="Join Code (e.g. AB12CD34)"
             android:textAllCaps="true"
-            android:maxLength="10" />
+            android:maxLength="12" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

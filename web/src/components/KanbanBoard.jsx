@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
+  setDoc,
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
@@ -79,45 +79,51 @@ export default function KanbanBoard({
     const taskRef = doc(collection(db, 'projects', project.id, 'tasks'));
     const taskKey = `TS-${Math.floor(100 + Math.random() * 900)}`;
 
-    await addDoc(collection(db, 'projects', project.id, 'tasks'), {
-      projectId: project.id,
-      title: title.trim(),
-      description: description.trim(),
-      status: statuses[0] || 'TODO',
-      priority,
-      issueType,
-      phase,
-      taskKey,
-      assignedTo: member ? member.userId : '',
-      assignedToName: member ? member.name : '',
-      dueDate: Number.isFinite(dueMs) ? dueMs : Date.now() + 7 * 86400000,
-      dependsOnTaskId: blocker ? blocker.id : '',
-      dependsOnTaskKey: blocker ? blocker.taskKey || blocker.title : '',
-      subtasks: [],
-      tags: [],
-      commentsCount: 0,
-      timeSpentHours: 0,
-      startDate: Date.now(),
-    });
-    void taskRef;
-
-    if (member && member.userId !== currentUser?.uid) {
-      await addDoc(collection(db, 'users', member.userId, 'notifications'), {
-        userId: member.userId,
-        title: `Task Assigned: ${title.trim()}`,
-        message: `You were assigned a task in ${project.title}`,
-        type: 'TASK_ASSIGNED',
+    try {
+      await setDoc(taskRef, {
+        taskId: taskRef.id,
         projectId: project.id,
-        projectTitle: project.title,
-        timestamp: Date.now(),
-        read: false,
+        title: title.trim(),
+        description: description.trim(),
+        status: statuses[0] || 'TODO',
+        priority,
+        issueType,
+        phase,
+        taskKey,
+        assignedTo: member ? member.userId : '',
+        assignedToName: member ? member.name : '',
+        dueDate: Number.isFinite(dueMs) ? dueMs : Date.now() + 7 * 86400000,
+        dependsOnTaskId: blocker ? blocker.id : '',
+        dependsOnTaskKey: blocker ? blocker.taskKey || blocker.title : '',
+        subtasks: [],
+        tags: [],
+        commentsCount: 0,
+        timeSpentHours: 0,
+        startDate: Date.now(),
       });
-    }
 
-    setTitle('');
-    setDescription('');
-    setAssigneeId('');
-    setDependsOnId('');
+      if (member && member.userId !== currentUser?.uid) {
+        const notifRef = doc(collection(db, 'users', member.userId, 'notifications'));
+        await setDoc(notifRef, {
+          notificationId: notifRef.id,
+          userId: member.userId,
+          title: `Task Assigned: ${title.trim()}`,
+          message: `You were assigned a task in ${project.title}`,
+          type: 'TASK_ASSIGNED',
+          projectId: project.id,
+          projectTitle: project.title,
+          timestamp: Date.now(),
+          read: false,
+        });
+      }
+
+      setTitle('');
+      setDescription('');
+      setAssigneeId('');
+      setDependsOnId('');
+    } catch (err) {
+      alert(`Failed to create task: ${err.message}`);
+    }
   }
 
   async function handleStatusChange(task, newStatus) {

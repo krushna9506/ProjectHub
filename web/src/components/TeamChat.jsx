@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addDoc, collection, doc, runTransaction } from 'firebase/firestore';
+import { collection, doc, runTransaction, setDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 const REACTION_EMOJIS = ['👍', '❤️', '🔥', '✅', '🎉'];
@@ -32,38 +32,46 @@ export default function TeamChat({ project, messages, members, currentUser }) {
     const senderName =
       currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Teammate';
 
-    await addDoc(collection(db, 'projects', project.id, 'messages'), {
-      projectId: project.id,
-      senderId: currentUser.uid,
-      senderName,
-      senderEmail: currentUser.email || '',
-      message: text.trim(),
-      messageType: 'TEXT',
-      timestamp: Date.now(),
-      replyToMessageId: replyTo ? replyTo.id : '',
-      replyToSenderName: replyTo ? replyTo.senderName : '',
-      replyToPreview: replyTo ? replyTo.message : '',
-      reactions: {},
-      mentionedUserIds: mentionedIds,
-    });
+    try {
+      const msgRef = doc(collection(db, 'projects', project.id, 'messages'));
+      await setDoc(msgRef, {
+        messageId: msgRef.id,
+        projectId: project.id,
+        senderId: currentUser.uid,
+        senderName,
+        senderEmail: currentUser.email || '',
+        message: text.trim(),
+        messageType: 'TEXT',
+        timestamp: Date.now(),
+        replyToMessageId: replyTo ? replyTo.id : '',
+        replyToSenderName: replyTo ? replyTo.senderName : '',
+        replyToPreview: replyTo ? replyTo.message : '',
+        reactions: {},
+        mentionedUserIds: mentionedIds,
+      });
 
-    for (const uid of mentionedIds) {
-      if (uid !== currentUser.uid) {
-        await addDoc(collection(db, 'users', uid, 'notifications'), {
-          userId: uid,
-          title: `${senderName} mentioned you in chat`,
-          message: text.trim(),
-          type: 'MENTION',
-          projectId: project.id,
-          projectTitle: project.title,
-          timestamp: Date.now(),
-          read: false,
-        });
+      for (const uid of mentionedIds) {
+        if (uid !== currentUser.uid) {
+          const notifRef = doc(collection(db, 'users', uid, 'notifications'));
+          await setDoc(notifRef, {
+            notificationId: notifRef.id,
+            userId: uid,
+            title: `${senderName} mentioned you in chat`,
+            message: text.trim(),
+            type: 'MENTION',
+            projectId: project.id,
+            projectTitle: project.title,
+            timestamp: Date.now(),
+            read: false,
+          });
+        }
       }
-    }
 
-    setText('');
-    setReplyTo(null);
+      setText('');
+      setReplyTo(null);
+    } catch (err) {
+      alert(`Failed to send message: ${err.message}`);
+    }
   }
 
   async function handleToggleReaction(msgId, emoji) {

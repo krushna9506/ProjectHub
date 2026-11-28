@@ -19,11 +19,17 @@ public class CampusVerifierAndTaskTest {
         assertEquals("stanford.edu", CampusVerifier.extractDomain("Student@Stanford.EDU"));
         assertTrue(CampusVerifier.isAcademicDomain("stanford.edu"));
         assertTrue(CampusVerifier.isAcademicDomain("iitb.ac.in"));
+        assertTrue(CampusVerifier.isAcademicDomain("sydney.edu.au"));
+        assertTrue(CampusVerifier.isAcademicDomain("iisc.ernet.in"));
         assertFalse(CampusVerifier.isAcademicDomain("gmail.com"));
+        assertFalse(CampusVerifier.isAcademicDomain("evil.ac.com"));
+        assertFalse(CampusVerifier.isAcademicDomain("phish.edu.attacker.com"));
+        assertFalse(CampusVerifier.isAcademicDomain("notedu.com"));
 
         assertTrue(CampusVerifier.isCampusVerified(true, "a@mit.edu"));
         assertFalse(CampusVerifier.isCampusVerified(false, "a@mit.edu"));
         assertFalse(CampusVerifier.isCampusVerified(true, "a@gmail.com"));
+        assertFalse(CampusVerifier.isCampusVerified(true, "a@spoof.ac.com"));
     }
 
     @Test

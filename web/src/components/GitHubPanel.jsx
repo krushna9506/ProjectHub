@@ -1,22 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
+import { isSafeHttpUrl } from '../utils/safeUrl.js';
+
+const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
 
 function parseOwnerRepo(input) {
   if (!input) return '';
   let clean = input.trim();
-  clean = clean.replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/^github\.com\//, '');
+  const qIdx = clean.indexOf('?');
+  if (qIdx >= 0) clean = clean.slice(0, qIdx);
+  const hIdx = clean.indexOf('#');
+  if (hIdx >= 0) clean = clean.slice(0, hIdx);
+
+  clean = clean.replace(/^https?:\/\/(www\.)?github\.com\//i, '').replace(/^github\.com\//i, '');
   clean = clean.replace(/\/+$/, '');
   if (clean.endsWith('.git')) clean = clean.slice(0, -4);
   clean = clean.replace(/\/+$/, '');
   const parts = clean.split('/');
-  if (parts.length < 2 || !parts[0] || !parts[1]) return '';
-  return `${parts[0]}/${parts[1]}`;
+  if (parts.length < 2) return '';
+  const owner = parts[0].trim();
+  const repo = parts[1].trim();
+  if (!owner || !repo || owner === '.' || owner === '..' || repo === '.' || repo === '..') {
+    return '';
+  }
+  if (!SAFE_SEGMENT.test(owner) || !SAFE_SEGMENT.test(repo)) return '';
+  return `${owner}/${repo}`;
 }
 
 export default function GitHubPanel({ project }) {
   const [repoInput, setRepoInput] = useState(project?.githubRepoUrl || '');
-  const [token, setToken] = useState(() => localStorage.getItem('projecthub_gh_token') || '');
+  const [token, setToken] = useState(() => {
+    try {
+      localStorage.removeItem('projecthub_gh_token');
+      return sessionStorage.getItem('projecthub_gh_token') || '';
+    } catch {
+      return '';
+    }
+  });
   const [repoInfo, setRepoInfo] = useState(null);
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('ALL');
@@ -62,40 +83,64 @@ export default function GitHubPanel({ project }) {
 
   async function handleSaveRepo(e) {
     e.preventDefault();
-    await updateDoc(doc(db, 'projects', project.id), {
-      githubRepoUrl: repoInput.trim(),
-    });
-    fetchGitHub(repoInput, token);
+    const slug = parseOwnerRepo(repoInput);
+    if (!slug) {
+      setError('Enter a valid GitHub repo (owner/repo or https://github.com/owner/repo).');
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        githubRepoUrl: repoInput.trim(),
+      });
+      fetchGitHub(repoInput, token);
+    } catch (err) {
+      setError(err.message || 'Failed to save repository.');
+    }
   }
 
   function handleSaveToken(val) {
     setToken(val);
-    localStorage.setItem('projecthub_gh_token', val.trim());
+    try {
+      localStorage.removeItem('projecthub_gh_token');
+      if (val.trim()) {
+        sessionStorage.setItem('projecthub_gh_token', val.trim());
+      } else {
+        sessionStorage.removeItem('projecthub_gh_token');
+      }
+    } catch {
+      // Ignore storage errors
+    }
   }
 
   async function importAsTask(item) {
     const isPr = Boolean(item.pull_request);
-    await addDoc(collection(db, 'projects', project.id, 'tasks'), {
-      projectId: project.id,
-      title: `${isPr ? '[PR #' : '[GH #'}${item.number}] ${item.title}`,
-      description: `Imported from GitHub: ${item.html_url}`,
-      status: item.state === 'closed' ? 'DONE' : 'TODO',
-      priority: 'MEDIUM',
-      issueType: isPr ? 'FEATURE' : 'BUG',
-      phase: 'DEVELOPMENT',
-      taskKey: `GH-${item.number}`,
-      githubIssueNumber: item.number,
-      githubIssueUrl: item.html_url,
-      assignedTo: '',
-      assignedToName: '',
-      dueDate: Date.now() + 7 * 86400000,
-      subtasks: [],
-      tags: [],
-      commentsCount: 0,
-      timeSpentHours: 0,
-      startDate: Date.now(),
-    });
-    alert(`Imported #${item.number} into ProjectHub Tasks!`);
+    try {
+      const taskRef = doc(collection(db, 'projects', project.id, 'tasks'));
+      await setDoc(taskRef, {
+        taskId: taskRef.id,
+        projectId: project.id,
+        title: `${isPr ? '[PR #' : '[GH #'}${item.number}] ${item.title}`,
+        description: `Imported from GitHub: ${isSafeHttpUrl(item.html_url) ? item.html_url : ''}`,
+        status: item.state === 'closed' ? 'DONE' : 'TODO',
+        priority: 'MEDIUM',
+        issueType: isPr ? 'FEATURE' : 'BUG',
+        phase: 'DEVELOPMENT',
+        taskKey: `GH-${item.number}`,
+        githubIssueNumber: item.number,
+        githubIssueUrl: isSafeHttpUrl(item.html_url) ? item.html_url : '',
+        assignedTo: '',
+        assignedToName: '',
+        dueDate: Date.now() + 7 * 86400000,
+        subtasks: [],
+        tags: [],
+        commentsCount: 0,
+        timeSpentHours: 0,
+        startDate: Date.now(),
+      });
+      alert(`Imported #${item.number} into ProjectHub Tasks!`);
+    } catch (err) {
+      alert(`Failed to import item: ${err.message}`);
+    }
   }
 
   const filtered = items.filter((item) => {
@@ -181,14 +226,16 @@ export default function GitHubPanel({ project }) {
               >
                 + Import Task
               </button>
-              <a
-                className="btn btn-sm"
-                href={item.html_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open
-              </a>
+              {isSafeHttpUrl(item.html_url) && (
+                <a
+                  className="btn btn-sm"
+                  href={item.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open
+                </a>
+              )}
             </div>
           </div>
         );

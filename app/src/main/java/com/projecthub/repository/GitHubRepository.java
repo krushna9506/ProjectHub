@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public class GitHubRepository {
 
     private static final String PREFS_NAME = "projecthub_github";
     private static final String KEY_TOKEN = "github_pat";
+    private static final Pattern SAFE_SEGMENT_PATTERN = Pattern.compile("^[A-Za-z0-9._-]+$");
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -61,13 +63,27 @@ public class GitHubRepository {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_TOKEN, "");
     }
 
+    public static void clearToken(Context context) {
+        if (context == null) return;
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().remove(KEY_TOKEN).apply();
+    }
+
+    public void shutdown() {
+        executor.shutdownNow();
+    }
+
     public static String parseOwnerRepo(String input) {
         if (input == null) return "";
         String cleaned = input.trim();
         if (cleaned.isEmpty()) return "";
 
-        cleaned = cleaned.replaceFirst("^https?://(www\\.)?github\\.com/", "");
-        cleaned = cleaned.replaceFirst("^github\\.com/", "");
+        int qIdx = cleaned.indexOf('?');
+        if (qIdx >= 0) cleaned = cleaned.substring(0, qIdx);
+        int hIdx = cleaned.indexOf('#');
+        if (hIdx >= 0) cleaned = cleaned.substring(0, hIdx);
+
+        cleaned = cleaned.replaceFirst("(?i)^https?://(www\\.)?github\\.com/", "");
+        cleaned = cleaned.replaceFirst("(?i)^github\\.com/", "");
         while (cleaned.endsWith("/")) {
             cleaned = cleaned.substring(0, cleaned.length() - 1);
         }
@@ -81,7 +97,13 @@ public class GitHubRepository {
         if (parts.length < 2) return "";
         String owner = parts[0].trim();
         String repo = parts[1].trim();
-        if (owner.isEmpty() || repo.isEmpty()) return "";
+        if (owner.isEmpty() || repo.isEmpty() || ".".equals(owner) || "..".equals(owner)
+                || ".".equals(repo) || "..".equals(repo)) {
+            return "";
+        }
+        if (!SAFE_SEGMENT_PATTERN.matcher(owner).matches() || !SAFE_SEGMENT_PATTERN.matcher(repo).matches()) {
+            return "";
+        }
         return owner + "/" + repo;
     }
 

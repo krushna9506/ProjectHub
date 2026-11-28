@@ -8,6 +8,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.projecthub.models.User;
 import com.projecthub.utils.CampusVerifier;
 
@@ -17,6 +18,7 @@ import java.util.List;
 public class AuthRepository {
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private ListenerRegistration usersListener;
 
     public interface AuthCallback {
         void onSuccess(User user);
@@ -179,7 +181,11 @@ public class AuthRepository {
 
     public LiveData<List<User>> getAllUsers() {
         MutableLiveData<List<User>> usersLiveData = new MutableLiveData<>();
-        db.collection("users").addSnapshotListener((snapshots, error) -> {
+        if (usersListener != null) {
+            usersListener.remove();
+            usersListener = null;
+        }
+        usersListener = db.collection("users").addSnapshotListener((snapshots, error) -> {
             if (error != null || snapshots == null) {
                 usersLiveData.setValue(new ArrayList<>());
                 return;
@@ -199,7 +205,15 @@ public class AuthRepository {
         return usersLiveData;
     }
 
+    public void clearListeners() {
+        if (usersListener != null) {
+            usersListener.remove();
+            usersListener = null;
+        }
+    }
+
     public void logout() {
+        clearListeners();
         auth.signOut();
     }
 }

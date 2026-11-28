@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  addDoc,
   arrayRemove,
   collection,
   doc,
@@ -174,7 +173,9 @@ export default function MessagesPanel({
 
     for (const uid of participantIds) {
       if (uid !== myUid) {
-        await addDoc(collection(db, 'users', uid, 'notifications'), {
+        const notifRef = doc(collection(db, 'users', uid, 'notifications'));
+        await setDoc(notifRef, {
+          notificationId: notifRef.id,
           userId: uid,
           title: `Added to ${cleanTitle}`,
           message: `${myName} created a group chat with you`,
@@ -236,71 +237,79 @@ export default function MessagesPanel({
     }
 
     const msgRef = doc(collection(db, 'conversations', convId, 'messages'));
-    await setDoc(msgRef, {
-      messageId: msgRef.id,
-      projectId: convId,
-      senderId: myUid,
-      senderName: myName,
-      senderEmail: currentUser?.email || '',
-      message: body,
-      messageType: 'TEXT',
-      timestamp: now,
-      replyToMessageId: replyTo ? replyTo.id : '',
-      replyToSenderName: replyTo ? replyTo.senderName : '',
-      replyToPreview: replyTo ? replyTo.message : '',
-      reactions: {},
-      mentionedUserIds: mentionedIds,
-    });
+    try {
+      await setDoc(msgRef, {
+        messageId: msgRef.id,
+        projectId: convId,
+        senderId: myUid,
+        senderName: myName,
+        senderEmail: currentUser?.email || '',
+        message: body,
+        messageType: 'TEXT',
+        timestamp: now,
+        replyToMessageId: replyTo ? replyTo.id : '',
+        replyToSenderName: replyTo ? replyTo.senderName : '',
+        replyToPreview: replyTo ? replyTo.message : '',
+        reactions: {},
+        mentionedUserIds: mentionedIds,
+      });
 
-    await updateDoc(doc(db, 'conversations', convId), {
-      lastMessage: body.slice(0, 480),
-      lastMessageSenderId: myUid,
-      lastMessageSenderName: myName,
-      lastMessageTimestamp: now,
-      [`readBy.${myUid}`]: now,
-    });
+      await updateDoc(doc(db, 'conversations', convId), {
+        lastMessage: body.slice(0, 480),
+        lastMessageSenderId: myUid,
+        lastMessageSenderName: myName,
+        lastMessageTimestamp: now,
+        [`readBy.${myUid}`]: now,
+      });
 
-    const convTitle = isGroup ? selectedConversation.title : myName;
-    const notified = new Set();
+      const convTitle = isGroup ? selectedConversation.title : myName;
+      const notified = new Set();
 
-    for (const uid of mentionedIds) {
-      if (uid && uid !== myUid) {
-        notified.add(uid);
-        await addDoc(collection(db, 'users', uid, 'notifications'), {
-          userId: uid,
-          title: `${myName} mentioned you in ${convTitle}`,
-          message: body,
-          type: 'MENTION',
-          projectId: convId,
-          projectTitle: convTitle,
-          timestamp: now,
-          read: false,
-        });
+      for (const uid of mentionedIds) {
+        if (uid && uid !== myUid) {
+          notified.add(uid);
+          const notifRef = doc(collection(db, 'users', uid, 'notifications'));
+          await setDoc(notifRef, {
+            notificationId: notifRef.id,
+            userId: uid,
+            title: `${myName} mentioned you in ${convTitle}`,
+            message: body,
+            type: 'MENTION',
+            projectId: convId,
+            projectTitle: convTitle,
+            timestamp: now,
+            read: false,
+          });
+        }
       }
-    }
 
-    const notifType = isGroup ? 'GROUP_CHAT' : 'DM';
-    const notifTitle = isGroup
-      ? `${myName} in ${convTitle}`
-      : `Message from ${myName}`;
+      const notifType = isGroup ? 'GROUP_CHAT' : 'DM';
+      const notifTitle = isGroup
+        ? `${myName} in ${convTitle}`
+        : `Message from ${myName}`;
 
-    for (const uid of selectedConversation.participantIds || []) {
-      if (uid && uid !== myUid && !notified.has(uid)) {
-        await addDoc(collection(db, 'users', uid, 'notifications'), {
-          userId: uid,
-          title: notifTitle,
-          message: body,
-          type: notifType,
-          projectId: convId,
-          projectTitle: convTitle,
-          timestamp: now,
-          read: false,
-        });
+      for (const uid of selectedConversation.participantIds || []) {
+        if (uid && uid !== myUid && !notified.has(uid)) {
+          const notifRef = doc(collection(db, 'users', uid, 'notifications'));
+          await setDoc(notifRef, {
+            notificationId: notifRef.id,
+            userId: uid,
+            title: notifTitle,
+            message: body,
+            type: notifType,
+            projectId: convId,
+            projectTitle: convTitle,
+            timestamp: now,
+            read: false,
+          });
+        }
       }
-    }
 
-    setText('');
-    setReplyTo(null);
+      setText('');
+      setReplyTo(null);
+    } catch (err) {
+      alert(`Failed to send message: ${err.message}`);
+    }
   }
 
   async function handleToggleReaction(msgId, emoji) {
@@ -338,22 +347,28 @@ export default function MessagesPanel({
       [addMemberUid]: userObj.email || '',
     };
 
-    await updateDoc(doc(db, 'conversations', selectedConversation.id), {
-      participantIds: ids,
-      participantNames: names,
-      participantEmails: emails,
-    });
-    await addDoc(collection(db, 'users', addMemberUid, 'notifications'), {
-      userId: addMemberUid,
-      title: `Added to ${selectedConversation.title}`,
-      message: `${myName} added you to the group chat`,
-      type: 'GROUP_CHAT',
-      projectId: selectedConversation.id,
-      projectTitle: selectedConversation.title,
-      timestamp: Date.now(),
-      read: false,
-    });
-    setAddMemberUid('');
+    try {
+      await updateDoc(doc(db, 'conversations', selectedConversation.id), {
+        participantIds: ids,
+        participantNames: names,
+        participantEmails: emails,
+      });
+      const notifRef = doc(collection(db, 'users', addMemberUid, 'notifications'));
+      await setDoc(notifRef, {
+        notificationId: notifRef.id,
+        userId: addMemberUid,
+        title: `Added to ${selectedConversation.title}`,
+        message: `${myName} added you to the group chat`,
+        type: 'GROUP_CHAT',
+        projectId: selectedConversation.id,
+        projectTitle: selectedConversation.title,
+        timestamp: Date.now(),
+        read: false,
+      });
+      setAddMemberUid('');
+    } catch (err) {
+      alert(`Failed to add member: ${err.message}`);
+    }
   }
 
   async function handleLeaveGroup() {

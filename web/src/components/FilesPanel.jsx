@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase.js';
+import { isSafeHttpUrl, normalizeHttpUrl } from '../utils/safeUrl.js';
+
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+const BLOCKED_UPLOAD_EXT_REGEX = /\.(html?|xhtml|svg|js|mjs|cjs|jsx|ts|tsx)$/i;
+const BLOCKED_CONTENT_TYPE_REGEX = /(html|javascript|ecmascript|svg)/i;
 
 export default function FilesPanel({ project, files, currentUser }) {
   const [name, setName] = useState('');
@@ -17,31 +22,56 @@ export default function FilesPanel({ project, files, currentUser }) {
   async function handleAddResource(e) {
     e.preventDefault();
     if (!name.trim()) return;
-    let normalizedUrl = url.trim();
-    if (type !== 'CODE' && normalizedUrl && !/^https?:\/\//i.test(normalizedUrl)) {
-      normalizedUrl = `https://${normalizedUrl}`;
+    let normalizedUrl = '';
+    if (type !== 'CODE') {
+      if (url.trim()) {
+        normalizedUrl = normalizeHttpUrl(url);
+        if (!normalizedUrl) {
+          alert('Please enter a valid http:// or https:// URL.');
+          return;
+        }
+      } else {
+        alert('Please provide a URL for this resource.');
+        return;
+      }
     }
 
-    await addDoc(collection(db, 'projects', project.id, 'files'), {
-      projectId: project.id,
-      name: name.trim(),
-      url: type === 'CODE' ? '' : normalizedUrl,
-      type,
-      snippetContent: type === 'CODE' ? snippet : '',
-      language: type === 'CODE' ? language : 'General',
-      uploadedById: currentUser.uid,
-      uploadedByName: currentUser.displayName || currentUser.email,
-      accessLevel,
-      timestamp: Date.now(),
-    });
-    setName('');
-    setUrl('');
-    setSnippet('');
+    try {
+      const fileDocRef = doc(collection(db, 'projects', project.id, 'files'));
+      await setDoc(fileDocRef, {
+        fileId: fileDocRef.id,
+        projectId: project.id,
+        name: name.trim(),
+        url: normalizedUrl,
+        type,
+        snippetContent: type === 'CODE' ? snippet : '',
+        language: type === 'CODE' ? language : 'General',
+        uploadedById: currentUser.uid,
+        uploadedByName: currentUser.displayName || currentUser.email,
+        accessLevel,
+        timestamp: Date.now(),
+      });
+      setName('');
+      setUrl('');
+      setSnippet('');
+    } catch (err) {
+      alert(`Failed to share resource: ${err.message}`);
+    }
   }
 
   async function handleFileUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size >= MAX_UPLOAD_BYTES) {
+      alert('File exceeds the 50MB upload limit.');
+      e.target.value = '';
+      return;
+    }
+    if (BLOCKED_UPLOAD_EXT_REGEX.test(file.name) || BLOCKED_CONTENT_TYPE_REGEX.test(file.type || '')) {
+      alert('Uploading active HTML/JavaScript/SVG files is blocked for security.');
+      e.target.value = '';
+      return;
+    }
     setUploading(true);
     try {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -55,7 +85,9 @@ export default function FilesPanel({ project, files, currentUser }) {
       });
       const downloadUrl = await getDownloadURL(storageRef);
       const isImage = /\.(png|jpe?g|webp|gif)$/i.test(file.name);
-      await addDoc(collection(db, 'projects', project.id, 'files'), {
+      const fileDocRef = doc(collection(db, 'projects', project.id, 'files'));
+      await setDoc(fileDocRef, {
+        fileId: fileDocRef.id,
         projectId: project.id,
         name: file.name,
         url: downloadUrl,
@@ -67,20 +99,28 @@ export default function FilesPanel({ project, files, currentUser }) {
         accessLevel,
         timestamp: Date.now(),
       });
+    } catch (err) {
+      alert(`Upload failed: ${err.message}`);
     } finally {
+      e.target.value = '';
       setUploading(false);
     }
   }
 
   async function handleDelete(f) {
-    if (f.storagePath) {
-      try {
-        await deleteObject(ref(storage, f.storagePath));
-      } catch {
-        // Ignore if storage object already deleted
+    if (!f?.id) return;
+    try {
+      if (f.storagePath) {
+        try {
+          await deleteObject(ref(storage, f.storagePath));
+        } catch {
+          // Ignore if storage object already deleted
+        }
       }
+      await deleteDoc(doc(db, 'projects', project.id, 'files', f.id));
+    } catch (err) {
+      alert(`Failed to delete file: ${err.message}`);
     }
-    await deleteDoc(doc(db, 'projects', project.id, 'files', f.id));
   }
 
   return (
@@ -174,8 +214,8 @@ export default function FilesPanel({ project, files, currentUser }) {
                 </pre>
               )}
               <div className="row" style={{ marginTop: 6 }}>
-                {f.url && (
-                  <a className="btn btn-sm" href={f.url} target="_blank" rel="noreferrer">
+                {isSafeHttpUrl(f.url) && (
+                  <a className="btn btn-sm" href={f.url} target="_blank" rel="noopener noreferrer">
                     Open
                   </a>
                 )}

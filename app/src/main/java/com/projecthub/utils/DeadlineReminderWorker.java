@@ -32,6 +32,9 @@ public class DeadlineReminderWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        if (!AppPreferences.isDeadlineRemindersEnabled(getApplicationContext())) {
+            return Result.success();
+        }
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             return Result.success();

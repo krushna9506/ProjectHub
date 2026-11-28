@@ -21,7 +21,7 @@ import com.projecthub.utils.ProjectTemplates;
 import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 public class CreateProjectActivity extends AppCompatActivity {
 
@@ -109,17 +109,23 @@ public class CreateProjectActivity extends AppCompatActivity {
             try {
                 days = Integer.parseInt(daysStr);
             } catch (NumberFormatException ignored) {}
+            if (days < 1) days = 1;
+            if (days > 3650) days = 3650;
 
-            long deadline = System.currentTimeMillis() + ((long) days * 24 * 60 * 60 * 1000L);
-            String joinCode = generateJoinCode(6);
             FirebaseUser fbUser = FirebaseAuth.getInstance().getCurrentUser();
-            String leadId = fbUser != null ? fbUser.getUid() : "unknown";
+            if (fbUser == null) {
+                Toast.makeText(this, "Sign in required to create a project.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            long deadline = System.currentTimeMillis() + ((long) days * 24 * 60 * 60 * 1000L);
+            String joinCode = generateJoinCode(8);
+            String leadId = fbUser.getUid();
             String leadName = "Team Lead";
             if (currentUserProfile != null && currentUserProfile.getName() != null && !currentUserProfile.getName().isEmpty()) {
                 leadName = currentUserProfile.getName();
-            } else if (fbUser != null && fbUser.getDisplayName() != null && !fbUser.getDisplayName().isEmpty()) {
+            } else if (fbUser.getDisplayName() != null && !fbUser.getDisplayName().isEmpty()) {
                 leadName = fbUser.getDisplayName();
-            } else if (fbUser != null && fbUser.getEmail() != null && fbUser.getEmail().contains("@")) {
+            } else if (fbUser.getEmail() != null && fbUser.getEmail().contains("@")) {
                 leadName = fbUser.getEmail().split("@")[0];
             }
 
@@ -129,7 +135,7 @@ public class CreateProjectActivity extends AppCompatActivity {
             project.setLookingFor(lookingFor);
             project.setTemplateType(selectedTemplate);
 
-            String userEmail = fbUser != null && fbUser.getEmail() != null ? fbUser.getEmail() : "";
+            String userEmail = fbUser.getEmail() != null ? fbUser.getEmail() : "";
             if (userEmail.contains("@")) {
                 project.setCollegeDomain(userEmail.substring(userEmail.indexOf("@") + 1));
             }
@@ -140,7 +146,7 @@ public class CreateProjectActivity extends AppCompatActivity {
 
     private String generateJoinCode(int length) {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars like O, 0, 1, I
-        Random random = new Random();
+        SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));

@@ -68,6 +68,7 @@ import com.projecthub.repository.ProjectRepository;
 import com.projecthub.utils.ConversationUtils;
 import com.projecthub.utils.MentionParser;
 import com.projecthub.utils.NotificationHelper;
+import com.projecthub.utils.SafeUrlUtils;
 import com.projecthub.utils.WorkflowAutomationEngine;
 import com.projecthub.viewmodel.ProjectDetailsViewModel;
 
@@ -506,12 +507,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             @Override
             public void onOpenClick(FileReference file) {
                 if (file.getUrl() != null && !file.getUrl().isEmpty()) {
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(file.getUrl()));
-                    try {
-                        startActivity(browserIntent);
-                    } catch (Exception e) {
-                        Toast.makeText(ProjectDetailsActivity.this, "Cannot open URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
+                    SafeUrlUtils.openSafeHttpUrl(ProjectDetailsActivity.this, file.getUrl());
                 } else if ("CODE".equalsIgnoreCase(file.getType())) {
                     Toast.makeText(ProjectDetailsActivity.this, "Code snippet is ready to copy!", Toast.LENGTH_SHORT).show();
                 }
@@ -535,7 +531,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             @Override
             public void onOpen(GitHubItem item) {
                 if (item.getHtmlUrl() != null && !item.getHtmlUrl().isEmpty()) {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.getHtmlUrl())));
+                    SafeUrlUtils.openSafeHttpUrl(ProjectDetailsActivity.this, item.getHtmlUrl());
                 }
             }
 
@@ -742,8 +738,9 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         btnGithubOpenExternal.setOnClickListener(v -> {
             String url = currentProject != null ? currentProject.getGithubRepoUrl() : "";
             if (url != null && !url.isEmpty()) {
-                String normalized = url.startsWith("http") ? url : "https://github.com/" + GitHubRepository.parseOwnerRepo(url);
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(normalized)));
+                String slug = GitHubRepository.parseOwnerRepo(url);
+                String targetUrl = !slug.isEmpty() ? "https://github.com/" + slug : url;
+                SafeUrlUtils.openSafeHttpUrl(ProjectDetailsActivity.this, targetUrl);
             }
         });
 
@@ -1056,12 +1053,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
             .setTitle("Live Team Video / Voice Call")
             .setMessage("Launch instant secure meeting room for project:\n" + projectTitle + "\n\nRoom Link:\n" + meetingUrl)
             .setPositiveButton("Join Call Now", (dialog, which) -> {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(meetingUrl));
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Could not open browser: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                SafeUrlUtils.openSafeHttpUrl(ProjectDetailsActivity.this, meetingUrl);
             })
             .setNeutralButton("Share Link in Chat", (dialog, which) -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -1819,9 +1811,13 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     type = "GITHUB";
                 }
 
-                if (!"CODE".equals(type) && !url.isEmpty()
-                        && !url.startsWith("http://") && !url.startsWith("https://")) {
-                    url = "https://" + url;
+                if (!"CODE".equals(type) && !url.isEmpty()) {
+                    String normalizedUrl = SafeUrlUtils.normalizeSafeHttpUrl(url);
+                    if (normalizedUrl.isEmpty()) {
+                        Toast.makeText(this, "Please enter a valid http/https link.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    url = normalizedUrl;
                 }
 
                 FileReference ref = new FileReference(
@@ -1991,5 +1987,11 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "ProjectHub: " + projectTitle);
         shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
         startActivity(Intent.createChooser(shareIntent, "Share Project with Teammates"));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        gitHubRepository.shutdown();
     }
 }

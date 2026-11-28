@@ -138,14 +138,14 @@
             </FrameLayout>
 
             <ImageButton
-                android:id="@+id/btnLogout"
+                android:id="@+id/btnSettings"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_logout"
+                android:src="@drawable/ic_settings"
                 android:padding="12dp"
                 app:tint="@color/text_secondary"
-                android:contentDescription="Log out" />
+                android:contentDescription="Settings" />
         </LinearLayout>
 
         <View
@@ -202,51 +202,6 @@
                     app:iconPadding="6dp"
                     app:iconSize="18dp"
                     app:iconTint="@color/accent"
-                    app:cornerRadius="12dp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnJoinProject"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:text="Join via Code"
-                    android:textSize="12sp"
-                    android:maxLines="1"
-                    android:textColor="@color/text_primary"
-                    app:strokeColor="@color/divider"
-                    app:icon="@drawable/ic_key"
-                    app:iconGravity="textStart"
-                    app:iconPadding="6dp"
-                    app:iconSize="16dp"
-                    app:iconTint="@color/primary"
-                    app:cornerRadius="12dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnManageRequests"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:text="Join Requests"
-                    android:textSize="12sp"
-                    android:maxLines="1"
-                    android:textColor="@color/text_primary"
-                    app:strokeColor="@color/divider"
-                    app:icon="@drawable/ic_mail"
-                    app:iconGravity="textStart"
-                    app:iconPadding="6dp"
-                    app:iconSize="16dp"
-                    app:iconTint="@color/primary"
                     app:cornerRadius="12dp" />
             </LinearLayout>
         </LinearLayout>
@@ -330,6 +285,22 @@
                     android:textAlignment="center"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEmptyJoinCode"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="14dp"
+                    android:text="Join via Code"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_primary"
+                    app:strokeColor="@color/divider"
+                    app:icon="@drawable/ic_key"
+                    app:iconPadding="6dp"
+                    app:iconSize="16dp"
+                    app:iconTint="@color/primary"
+                    app:cornerRadius="12dp" />
             </LinearLayout>
 
             <ProgressBar

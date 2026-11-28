@@ -38,6 +38,7 @@ import com.projecthub.models.TaskComment;
 import com.projecthub.models.User;
 import com.projecthub.repository.ProjectRepository;
 import com.projecthub.utils.MentionParser;
+import com.projecthub.utils.SafeUrlUtils;
 import com.projecthub.viewmodel.ProjectDetailsViewModel;
 
 import java.text.SimpleDateFormat;
@@ -152,7 +153,7 @@ public class TaskDetailsActivity extends AppCompatActivity {
         btnDeleteTask.setOnClickListener(v -> confirmDeleteTask());
         btnDetailOpenGithub.setOnClickListener(v -> {
             if (currentTask != null && currentTask.getGithubIssueUrl() != null && !currentTask.getGithubIssueUrl().isEmpty()) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(currentTask.getGithubIssueUrl())));
+                SafeUrlUtils.openSafeHttpUrl(TaskDetailsActivity.this, currentTask.getGithubIssueUrl());
             }
         });
     }
@@ -496,12 +497,16 @@ public class TaskDetailsActivity extends AppCompatActivity {
                 if (!val.isEmpty()) {
                     try {
                         double hrs = Double.parseDouble(val);
-                        if (hrs > 0) {
+                        if (hrs > 0 && hrs <= 1000) {
                             viewModel.logTaskWorkTime(projectId, taskId, hrs);
                             taskTimeSpent += hrs;
                             tvDetailTimeSpent.setText(String.format(Locale.US, "%.1f hrs logged", taskTimeSpent));
+                        } else {
+                            Toast.makeText(this, "Enter valid hours (0.1 to 1000).", Toast.LENGTH_SHORT).show();
                         }
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                        Toast.makeText(this, "Enter valid numeric hours.", Toast.LENGTH_SHORT).show();
+                    }
                 }
             })
             .setNegativeButton("Cancel", null)

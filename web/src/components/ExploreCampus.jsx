@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 export default function ExploreCampus({
@@ -37,28 +37,36 @@ export default function ExploreCampus({
   }, [campusUsers, queryText, peopleFilter]);
 
   async function requestToJoin(project) {
-    await addDoc(collection(db, 'join_requests'), {
-      projectId: project.id,
-      projectTitle: project.title,
-      leadId: project.leadId,
-      applicantId: currentUser.uid,
-      applicantName: currentUser.displayName || currentUser.email,
-      applicantEmail: currentUser.email || '',
-      message: 'Requesting to join via ProjectHub Web Companion',
-      status: 'PENDING',
-      timestamp: Date.now(),
-    });
-    await addDoc(collection(db, 'users', project.leadId, 'notifications'), {
-      userId: project.leadId,
-      title: 'New Team Join Request',
-      message: `${currentUser.displayName || currentUser.email} requested to join ${project.title}`,
-      type: 'JOIN_REQUEST',
-      projectId: project.id,
-      projectTitle: project.title,
-      timestamp: Date.now(),
-      read: false,
-    });
-    alert('Join request sent!');
+    try {
+      const reqRef = doc(collection(db, 'join_requests'));
+      await setDoc(reqRef, {
+        requestId: reqRef.id,
+        projectId: project.id,
+        projectTitle: project.title,
+        leadId: project.leadId,
+        applicantId: currentUser.uid,
+        applicantName: currentUser.displayName || currentUser.email,
+        applicantEmail: currentUser.email || '',
+        message: 'Requesting to join via ProjectHub Web Companion',
+        status: 'PENDING',
+        timestamp: Date.now(),
+      });
+      const notifRef = doc(collection(db, 'users', project.leadId, 'notifications'));
+      await setDoc(notifRef, {
+        notificationId: notifRef.id,
+        userId: project.leadId,
+        title: 'New Team Join Request',
+        message: `${currentUser.displayName || currentUser.email} requested to join ${project.title}`,
+        type: 'JOIN_REQUEST',
+        projectId: project.id,
+        projectTitle: project.title,
+        timestamp: Date.now(),
+        read: false,
+      });
+      alert('Join request sent!');
+    } catch (err) {
+      alert(`Failed to send request: ${err.message}`);
+    }
   }
 
   async function inviteUser(user) {
@@ -67,17 +75,23 @@ export default function ExploreCampus({
       return;
     }
     const targetProject = myProjects[0];
-    await addDoc(collection(db, 'users', user.userId, 'notifications'), {
-      userId: user.userId,
-      title: 'Project Invitation',
-      message: `${currentUser.displayName || currentUser.email} invited you to ${targetProject.title}. Join Code: ${targetProject.joinCode}`,
-      type: 'TEAM_INVITE',
-      projectId: targetProject.id,
-      projectTitle: targetProject.title,
-      timestamp: Date.now(),
-      read: false,
-    });
-    alert(`Invitation sent to ${user.name} for ${targetProject.title}`);
+    try {
+      const notifRef = doc(collection(db, 'users', user.userId, 'notifications'));
+      await setDoc(notifRef, {
+        notificationId: notifRef.id,
+        userId: user.userId,
+        title: 'Project Invitation',
+        message: `${currentUser.displayName || currentUser.email} invited you to ${targetProject.title}. Join Code: ${targetProject.joinCode}`,
+        type: 'TEAM_INVITE',
+        projectId: targetProject.id,
+        projectTitle: targetProject.title,
+        timestamp: Date.now(),
+        read: false,
+      });
+      alert(`Invitation sent to ${user.name} for ${targetProject.title}`);
+    } catch (err) {
+      alert(`Failed to send invitation: ${err.message}`);
+    }
   }
 
   return (

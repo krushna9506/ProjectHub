@@ -31,6 +31,7 @@ import com.projecthub.repository.ChatRepository;
 import com.projecthub.utils.ConversationUtils;
 import com.projecthub.utils.MentionParser;
 import com.projecthub.utils.NotificationHelper;
+import com.projecthub.utils.SafeUrlUtils;
 import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.ChatViewModel;
 
@@ -290,11 +291,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             .setTitle("Video / Voice Call")
             .setMessage("Join an instant meeting room with " + title + ":\n\n" + meetingUrl)
             .setPositiveButton("Join Call Now", (d, w) -> {
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(meetingUrl)));
-                } catch (Exception e) {
-                    Toast.makeText(this, "Could not open browser: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                SafeUrlUtils.openSafeHttpUrl(ChatRoomActivity.this, meetingUrl);
             })
             .setNeutralButton("Share Link in Chat", (d, w) -> {
                 if (currentConversation == null) return;

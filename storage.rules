@@ -1,30 +1,101 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function firestoreProjectPath(projectId) {
+      return /databases/(default)/documents/projects/$(projectId);
+    }
+
+    function projectExists(projectId) {
+      return firestore.exists(firestoreProjectPath(projectId));
+    }
+
+    function projectData(projectId) {
+      return firestore.get(firestoreProjectPath(projectId)).data;
+    }
+
+    function isProjectMember(projectId) {
+      return request.auth != null &&
+             projectExists(projectId) &&
+             (
+               ('leadId' in projectData(projectId) && projectData(projectId).leadId == request.auth.uid) ||
+               ('members' in projectData(projectId) &&
+                projectData(projectId).members is map &&
+                request.auth.uid in projectData(projectId).members &&
+                projectData(projectId).members[request.auth.uid] is string &&
+                projectData(projectId).members[request.auth.uid].size() > 0)
+             );
+    }
+
+    function isProjectLead(projectId) {
+      return request.auth != null &&
+             projectExists(projectId) &&
+             'leadId' in projectData(projectId) &&
+             projectData(projectId).leadId == request.auth.uid;
+    }
+
+    function isPublicProject(projectId) {
+      return projectExists(projectId) &&
+             (
+               ('isPublic' in projectData(projectId) && projectData(projectId).isPublic == true) ||
+               ('public' in projectData(projectId) && projectData(projectId).public == true)
+             );
+    }
+
     // Project files, documents, diagrams & images uploaded by teammates
     match /project_files/{projectId}/{fileName} {
-      // Authenticated users can read uploaded project assets
-      allow read: if request.auth != null;
+      // Only project members (or LEAD_ONLY exceptions) can read private assets;
+      // PUBLIC assets on public projects are readable by signed-in users.
+      allow read: if (
+                    isProjectMember(projectId) &&
+                    (
+                      resource == null ||
+                      resource.metadata == null ||
+                      !('accessLevel' in resource.metadata) ||
+                      resource.metadata.accessLevel != 'LEAD_ONLY' ||
+                      isProjectLead(projectId) ||
+                      ('uploadedBy' in resource.metadata && resource.metadata.uploadedBy == request.auth.uid)
+                    )
+                  ) ||
+                  (
+                    request.auth != null &&
+                    resource != null &&
+                    resource.metadata != null &&
+                    'accessLevel' in resource.metadata &&
+                    resource.metadata.accessLevel == 'PUBLIC' &&
+                    isPublicProject(projectId)
+                  );
 
-      // Allow upload up to 50MB per file by authenticated users, recording uploader metadata
-      allow create, update: if request.auth != null
-                            && request.resource != null
-                            && request.resource.size < 50 * 1024 * 1024
-                            && (
-                              !('uploadedBy' in request.resource.metadata)
-                              || request.resource.metadata.uploadedBy == request.auth.uid
-                              || request.resource.metadata.uploadedBy == ''
-                            );
+      // Allow project members to upload files up to 50MB, binding uploadedBy to caller UID
+      // and blocking active web script/HTML/SVG payloads.
+      allow create: if isProjectMember(projectId) &&
+                       request.resource != null &&
+                       request.resource.size < 50 * 1024 * 1024 &&
+                       request.resource.metadata != null &&
+                       'uploadedBy' in request.resource.metadata &&
+                       request.resource.metadata.uploadedBy == request.auth.uid &&
+                       (
+                         request.resource.contentType == null ||
+                         !request.resource.contentType.matches('(?i).*(html|javascript|ecmascript|svg).*')
+                       );
 
-      // Allow uploader (or authenticated member when legacy metadata is absent) to delete
-      allow delete: if request.auth != null
-                    && (
-                      resource == null
-                      || resource.metadata == null
-                      || !('uploadedBy' in resource.metadata)
-                      || resource.metadata.uploadedBy == ''
-                      || resource.metadata.uploadedBy == request.auth.uid
-                    );
+      // Immutable timestamped storage paths prevent overwriting teammates' uploads.
+      allow update: if false;
+
+      // Only the project lead or original uploader may delete stored project assets.
+      allow delete: if isProjectMember(projectId) &&
+                       (
+                         isProjectLead(projectId) ||
+                         (
+                           resource != null &&
+                           resource.metadata != null &&
+                           'uploadedBy' in resource.metadata &&
+                           resource.metadata.uploadedBy == request.auth.uid
+                         )
+                       );
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

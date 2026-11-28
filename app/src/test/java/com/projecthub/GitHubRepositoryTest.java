@@ -21,7 +21,12 @@ public class GitHubRepositoryTest {
             GitHubRepository.parseOwnerRepo("https://github.com/krushna9506/ProjectHub.git/"));
         assertEquals("octocat/Hello-World",
             GitHubRepository.parseOwnerRepo("octocat/Hello-World"));
+        assertEquals("krushna9506/ProjectHub",
+            GitHubRepository.parseOwnerRepo("https://github.com/krushna9506/ProjectHub?tab=readme#top"));
         assertEquals("", GitHubRepository.parseOwnerRepo("invalid-input"));
+        assertEquals("", GitHubRepository.parseOwnerRepo("../etc/passwd"));
+        assertEquals("", GitHubRepository.parseOwnerRepo("owner/.."));
+        assertEquals("", GitHubRepository.parseOwnerRepo("owner/repo name"));
     }
 
     @Test

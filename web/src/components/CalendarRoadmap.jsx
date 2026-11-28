@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 export default function CalendarRoadmap({ project, tasks, milestones, automations }) {
@@ -41,30 +41,42 @@ export default function CalendarRoadmap({ project, tasks, milestones, automation
     e.preventDefault();
     if (!msTitle.trim()) return;
     const days = parseInt(msDays, 10) || 14;
-    await addDoc(collection(db, 'projects', project.id, 'milestones'), {
-      projectId: project.id,
-      title: msTitle.trim(),
-      status: 'PENDING',
-      dueDate: Date.now() + days * 86400000,
-    });
-    setMsTitle('');
+    try {
+      const msRef = doc(collection(db, 'projects', project.id, 'milestones'));
+      await setDoc(msRef, {
+        milestoneId: msRef.id,
+        projectId: project.id,
+        title: msTitle.trim(),
+        status: 'PENDING',
+        dueDate: Date.now() + days * 86400000,
+      });
+      setMsTitle('');
+    } catch (err) {
+      alert(`Failed to add milestone: ${err.message}`);
+    }
   }
 
   async function handleAddRule(e) {
     e.preventDefault();
     const name = ruleName.trim() || `${triggerType} -> ${actionType}`;
-    await addDoc(collection(db, 'projects', project.id, 'automations'), {
-      projectId: project.id,
-      name,
-      triggerType,
-      triggerValue: triggerValue.trim(),
-      actionType,
-      actionValue: actionValue.trim(),
-      enabled: true,
-    });
-    setRuleName('');
-    setTriggerValue('');
-    setActionValue('');
+    try {
+      const ruleRef = doc(collection(db, 'projects', project.id, 'automations'));
+      await setDoc(ruleRef, {
+        ruleId: ruleRef.id,
+        projectId: project.id,
+        name,
+        triggerType,
+        triggerValue: triggerValue.trim(),
+        actionType,
+        actionValue: actionValue.trim(),
+        enabled: true,
+      });
+      setRuleName('');
+      setTriggerValue('');
+      setActionValue('');
+    } catch (err) {
+      alert(`Failed to add automation rule: ${err.message}`);
+    }
   }
 
   return (

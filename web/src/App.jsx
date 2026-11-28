@@ -13,6 +13,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
@@ -23,6 +24,7 @@ import GitHubPanel from './components/GitHubPanel.jsx';
 import FilesPanel from './components/FilesPanel.jsx';
 import ExploreCampus from './components/ExploreCampus.jsx';
 import MessagesPanel, { isConversationUnread } from './components/MessagesPanel.jsx';
+import SettingsPanel from './components/SettingsPanel.jsx';
 
 const TEMPLATES = {
   BLANK: { category: 'General', days: 30, lookingFor: '' },
@@ -30,6 +32,23 @@ const TEMPLATES = {
   HACKATHON: { category: 'SIH Hackathon', days: 3, lookingFor: 'Fullstack, UI/UX, Pitch' },
   RESEARCH: { category: 'Research', days: 60, lookingFor: 'ML Researcher, Technical Writer' },
 };
+
+function generateJoinCode(length = 8) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const buf = new Uint32Array(length);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buf);
+  } else {
+    for (let i = 0; i < length; i++) {
+      buf[i] = Math.floor(Math.random() * chars.length);
+    }
+  }
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars[buf[i] % chars.length];
+  }
+  return code;
+}
 
 function BrandLogo() {
   return (
@@ -69,13 +88,20 @@ function ThemeToggleButton({ theme, onToggle }) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => {
+  const [themePreference, setThemePreference] = useState(() => {
     try {
       const saved = localStorage.getItem('projecthub_theme');
-      if (saved === 'dark' || saved === 'light') return saved;
-      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (saved === 'dark' || saved === 'light' || saved === 'system') return saved;
+      return 'system';
     } catch {
-      return 'light';
+      return 'system';
+    }
+  });
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => {
+    try {
+      return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+    } catch {
+      return false;
     }
   });
   const [user, setUser] = useState(null);
@@ -88,7 +114,7 @@ export default function App() {
   const [campusUsers, setCampusUsers] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [activeTab, setActiveTab] = useState('KANBAN');
-  const [viewMode, setViewMode] = useState('WORKSPACE'); // 'WORKSPACE' | 'MESSAGES' | 'EXPLORE'
+  const [viewMode, setViewMode] = useState('WORKSPACE'); // 'WORKSPACE' | 'MESSAGES' | 'EXPLORE' | 'SETTINGS'
   const [conversations, setConversations] = useState([]);
   const [selectedConversationId, setSelectedConversationId] = useState('');
 
@@ -104,21 +130,59 @@ export default function App() {
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjTemplate, setNewProjTemplate] = useState('CAPSTONE');
 
+  const resolvedTheme =
+    themePreference === 'system' ? (systemPrefersDark ? 'dark' : 'light') : themePreference;
+
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return undefined;
+    const handleMediaChange = (e) => setSystemPrefersDark(e.matches);
+    setSystemPrefersDark(mq.matches);
+    mq.addEventListener?.('change', handleMediaChange);
+    return () => mq.removeEventListener?.('change', handleMediaChange);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
     try {
-      localStorage.setItem('projecthub_theme', theme);
+      localStorage.setItem('projecthub_theme', themePreference);
     } catch {
       // Ignore storage failures
     }
-  }, [theme]);
+  }, [themePreference, resolvedTheme]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () =>
+    setThemePreference(resolvedTheme === 'dark' ? 'light' : 'dark');
+
+  function clearSensitiveState() {
+    setProjects([]);
+    setPublicProjects([]);
+    setCampusUsers([]);
+    setConversations([]);
+    setSelectedProjectId('');
+    setSelectedConversationId('');
+    setTasks([]);
+    setSelectedTask(null);
+    setMessages([]);
+    setMilestones([]);
+    setAutomations([]);
+    setFiles([]);
+    setMembers([]);
+    try {
+      sessionStorage.removeItem('projecthub_gh_token');
+      localStorage.removeItem('projecthub_gh_token');
+    } catch {
+      // Ignore storage errors
+    }
+  }
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return;
     return onAuthStateChanged(auth, (fbUser) => {
       setUser(fbUser);
+      if (!fbUser) {
+        clearSensitiveState();
+      }
     });
   }, []);
 
@@ -135,12 +199,13 @@ export default function App() {
       }
     );
 
-    const unsubPublic = onSnapshot(collection(db, 'projects'), (snap) => {
-      const list = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((p) => p.isPublic === true || p.public === true);
-      setPublicProjects(list);
-    });
+    const unsubPublic = onSnapshot(
+      query(collection(db, 'projects'), where('isPublic', '==', true)),
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setPublicProjects(list);
+      }
+    );
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
       setCampusUsers(snap.docs.map((d) => ({ userId: d.id, ...d.data() })));
@@ -306,8 +371,9 @@ export default function App() {
     e.preventDefault();
     if (!newProjTitle.trim()) return;
     const spec = TEMPLATES[newProjTemplate] || TEMPLATES.BLANK;
-    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const joinCode = generateJoinCode(8);
     const projRef = doc(collection(db, 'projects'));
+    const now = Date.now();
 
     await setDoc(projRef, {
       projectId: projRef.id,
@@ -318,8 +384,8 @@ export default function App() {
       leadName: user.displayName || user.email?.split('@')[0] || 'Lead',
       members: { [user.uid]: 'LEAD' },
       progressPercentage: 0,
-      createdAt: Date.now(),
-      deadline: Date.now() + spec.days * 86400000,
+      createdAt: now,
+      deadline: now + spec.days * 86400000,
       isPublic: true,
       public: true,
       category: spec.category,
@@ -327,9 +393,46 @@ export default function App() {
       templateType: newProjTemplate,
       customStatuses: ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'],
     });
+    await setDoc(doc(db, 'join_codes', joinCode), {
+      joinCode,
+      projectId: projRef.id,
+      leadId: user.uid,
+      createdAt: now,
+    });
     setSelectedProjectId(projRef.id);
     setNewProjTitle('');
     setNewProjDesc('');
+  }
+
+  async function handleJoinProjectByCode(rawCode) {
+    if (!user || !db) return { ok: false, message: 'Sign in first.' };
+    const code = (rawCode || '').trim().toUpperCase();
+    if (!code) return { ok: false, message: 'Enter an invite code.' };
+
+    const codeSnap = await getDoc(doc(db, 'join_codes', code));
+    if (!codeSnap.exists()) {
+      return { ok: false, message: 'Invalid or expired invite code.' };
+    }
+    const codeData = codeSnap.data() || {};
+    const projectId = codeData.projectId;
+    if (!projectId) {
+      return { ok: false, message: 'Invite code has no linked project.' };
+    }
+    if (projects.some((p) => p.id === projectId)) {
+      setSelectedProjectId(projectId);
+      return { ok: true, message: 'You are already a member of this workspace.' };
+    }
+    await updateDoc(doc(db, 'projects', projectId), {
+      [`members.${user.uid}`]: 'MEMBER',
+      lastJoinCodeUsed: `${code}:${user.uid}`,
+    });
+    setSelectedProjectId(projectId);
+    return { ok: true, message: 'Joined workspace successfully!' };
+  }
+
+  async function handleLogout() {
+    clearSensitiveState();
+    await signOut(auth);
   }
 
   if (!isFirebaseConfigured) {
@@ -341,7 +444,7 @@ export default function App() {
               <BrandLogo />
               <span>ProjectHub</span>
             </div>
-            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+            <ThemeToggleButton theme={resolvedTheme} onToggle={toggleTheme} />
           </div>
           <h2 style={{ marginTop: 0, marginBottom: 8 }}>Web Companion Setup</h2>
           <p className="muted" style={{ marginBottom: 0 }}>
@@ -362,7 +465,7 @@ export default function App() {
               <BrandLogo />
               <span>ProjectHub</span>
             </div>
-            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+            <ThemeToggleButton theme={resolvedTheme} onToggle={toggleTheme} />
           </div>
           <h2 style={{ margin: '0 0 6px', fontSize: 22 }}>Welcome back</h2>
           <p className="muted" style={{ margin: '0 0 18px' }}>
@@ -432,10 +535,11 @@ export default function App() {
           >
             Campus Explore
           </button>
-          <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-          <span className="muted">{user.email}</span>
-          <button className="btn btn-sm" onClick={() => signOut(auth)}>
-            Logout
+          <button
+            className={`btn btn-sm ${viewMode === 'SETTINGS' ? 'btn-primary' : ''}`}
+            onClick={() => setViewMode('SETTINGS')}
+          >
+            Settings
           </button>
         </div>
       </header>
@@ -457,6 +561,15 @@ export default function App() {
             myProjects={projects}
             currentUser={user}
             onMessageUser={openOrCreateDirectChat}
+          />
+        ) : viewMode === 'SETTINGS' ? (
+          <SettingsPanel
+            user={user}
+            themePreference={themePreference}
+            resolvedTheme={resolvedTheme}
+            onChangeTheme={setThemePreference}
+            onJoinProjectByCode={handleJoinProjectByCode}
+            onLogout={handleLogout}
           />
         ) : (
           <>

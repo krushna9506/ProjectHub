@@ -32,11 +32,13 @@ public class Project {
     private String templateType; // "BLANK", "CAPSTONE", "HACKATHON", "RESEARCH"
     private String mentorId;
     private String mentorName;
+    private String lastJoinCodeUsed;
 
     public Project() {
         this.members = new HashMap<>();
         this.customStatuses = defaultStatuses();
         this.templateType = "BLANK";
+        this.lastJoinCodeUsed = "";
     }
 
     public Project(String projectId, String title, String description, String joinCode, 
@@ -151,4 +153,7 @@ public class Project {
 
     public String getMentorName() { return mentorName; }
     public void setMentorName(String mentorName) { this.mentorName = mentorName; }
+
+    public String getLastJoinCodeUsed() { return lastJoinCodeUsed; }
+    public void setLastJoinCodeUsed(String lastJoinCodeUsed) { this.lastJoinCodeUsed = lastJoinCodeUsed; }
 }

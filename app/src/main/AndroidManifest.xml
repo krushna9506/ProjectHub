@@ -11,7 +11,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <application
-        android:allowBackup="true"
+        android:name=".ProjectHubApplication"
+        android:allowBackup="false"
         android:icon="@drawable/ic_launcher_brand"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_launcher_brand"
@@ -74,6 +75,10 @@
 
         <activity
             android:name=".ui.ChatRoomActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.SettingsActivity"
             android:exported="false" />
 
         <!-- Firebase Cloud Messaging Service -->

@@ -32,7 +32,7 @@ service cloud.firestore {
     //   - userId: string (required, must equal parent {userId})
     //   - title: string (required, 1..200 chars)
     //   - message: string (required, 0..1000 chars)
-    //   - type: string (required, 1..50 chars)
+    //   - type: string (required, one of TASK|TASK_ASSIGNED|MENTION|COMMENT|DEADLINE|JOIN_REQUEST|JOIN_ACCEPTED|JOIN_REJECTED|TEAM_INVITE|AUTOMATION|CHAT|CALL|DM|GROUP_CHAT)
     //   - projectId: string (optional/nullable, 0..128 chars)
     //   - projectTitle: string (optional/nullable, 0..200 chars)
     //   - timestamp: number | timestamp (optional/nullable, >= 0 if number)
@@ -45,6 +45,7 @@ service cloud.firestore {
     //   - title: string (required, 1..150 chars)
     //   - description: string (optional/nullable, 0..2000 chars)
     //   - joinCode: string (optional/nullable, 0..20 chars; lead-only mutable)
+    //   - lastJoinCodeUsed: string (optional/nullable, 0..160 chars; self-join proof '<joinCode>:<uid>')
     //   - leadId: string (required, 1..128 chars; lead-only transferable)
     //   - leadName: string (optional/nullable, 0..120 chars)
     //   - members: map (required, 1..100 entries; maps uid -> 'LEAD'|'MEMBER'|'FACULTY')
@@ -102,6 +103,14 @@ service cloud.firestore {
     //   - fileId, projectId, name, url, type, snippetContent, language,
     //     uploadedById, uploadedByName, storagePath, fileSizeBytes,
     //     accessLevel, timestamp
+    //
+    // Collection: join_codes
+    // Document ID: {code} (6..20 chars, equals joinCode field)
+    // Fields:
+    //   - joinCode: string (required, 6..20 chars, equals {code})
+    //   - projectId: string (required, 1..128 chars)
+    //   - leadId: string (required, 1..128 chars, equals auth.uid on create/update)
+    //   - createdAt: number | timestamp (optional/nullable, >= 0 if number)
     //
     // Collection: join_requests
     // Document ID: {requestId}
@@ -284,7 +293,7 @@ service cloud.firestore {
                 pData.members is map &&
                 request.auth.uid in pData.members &&
                 pData.members[request.auth.uid] is string &&
-                pData.members[request.auth.uid].size() > 0)
+                pData.members[request.auth.uid] > '')
              );
     }
 
@@ -307,6 +316,13 @@ service cloud.firestore {
              projectExists(projectId) &&
              'leadId' in projectData(projectId) &&
              projectData(projectId).leadId == request.auth.uid;
+    }
+
+    function isLeadOfProjectAfter(projectId) {
+      return isSignedIn() &&
+             existsAfter(projectPath(projectId)) &&
+             'leadId' in getAfter(projectPath(projectId)).data &&
+             getAfter(projectPath(projectId)).data.leadId == request.auth.uid;
     }
 
     // ===============================================================
@@ -350,8 +366,8 @@ service cloud.firestore {
       return isSignedIn() &&
              conversationId.size() <= 300 &&
              (
-               conversationId.matches('^dm_' + request.auth.uid + '_.+$') ||
-               conversationId.matches('^dm_.+_' + request.auth.uid + '$')
+               conversationId.matches('^dm_' + request.auth.uid + '_[A-Za-z0-9_-]+$') ||
+               conversationId.matches('^dm_[A-Za-z0-9_-]+_' + request.auth.uid + '$')
              );
     }
 
@@ -396,6 +412,11 @@ service cloud.firestore {
              isReqStr(data, 'title', 1, 200) &&
              isReqStr(data, 'message', 0, 1000) &&
              isReqStr(data, 'type', 1, 50) &&
+             data.type in [
+               'TASK', 'TASK_ASSIGNED', 'MENTION', 'COMMENT', 'DEADLINE',
+               'JOIN_REQUEST', 'JOIN_ACCEPTED', 'JOIN_REJECTED', 'TEAM_INVITE',
+               'AUTOMATION', 'CHAT', 'CALL', 'DM', 'GROUP_CHAT'
+             ] &&
              isOptStr(data, 'projectId', 128) &&
              isOptStr(data, 'projectTitle', 200) &&
              isOptTimeValue(data, 'timestamp') &&
@@ -404,8 +425,8 @@ service cloud.firestore {
 
     function isValidProject(data, projectId) {
       return hasOnlyAllowedFields(data, [
-               'projectId', 'title', 'description', 'joinCode', 'leadId',
-               'leadName', 'members', 'progressPercentage', 'createdAt',
+               'projectId', 'title', 'description', 'joinCode', 'lastJoinCodeUsed',
+               'leadId', 'leadName', 'members', 'progressPercentage', 'createdAt',
                'deadline', 'public', 'isPublic', 'category', 'lookingFor',
                'collegeDomain', 'githubRepoUrl', 'venueLocation', 'latitude',
                'longitude', 'customStatuses', 'templateType', 'mentorId',
@@ -416,6 +437,7 @@ service cloud.firestore {
              isReqStr(data, 'title', 1, 150) &&
              isOptStr(data, 'description', 2000) &&
              isOptStr(data, 'joinCode', 20) &&
+             isOptStr(data, 'lastJoinCodeUsed', 160) &&
              isReqStr(data, 'leadId', 1, 128) &&
              isOptStr(data, 'leadName', 120) &&
              data.members is map &&
@@ -590,6 +612,18 @@ service cloud.firestore {
              isOptTimeValue(data, 'timestamp');
     }
 
+    function isValidJoinCode(data, code) {
+      return hasOnlyAllowedFields(data, [
+               'joinCode', 'projectId', 'leadId', 'createdAt'
+             ]) &&
+             hasRequiredFields(data, ['joinCode', 'projectId', 'leadId']) &&
+             isReqStr(data, 'joinCode', 6, 20) &&
+             data.joinCode == code &&
+             isReqStr(data, 'projectId', 1, 128) &&
+             isReqStr(data, 'leadId', 1, 128) &&
+             isOptTimeValue(data, 'createdAt');
+    }
+
     function isValidJoinRequest(data, requestId) {
       return hasOnlyAllowedFields(data, [
                'requestId', 'projectId', 'projectTitle', 'leadId', 'applicantId',
@@ -643,7 +677,10 @@ service cloud.firestore {
                  data.participantIds.size() <= 100 &&
                  data.participantIds[0] is string &&
                  data.participantIds[0].size() >= 1 &&
-                 data.participantIds[0].size() <= 128
+                 data.participantIds[0].size() <= 128 &&
+                 data.participantIds[data.participantIds.size() - 1] is string &&
+                 data.participantIds[data.participantIds.size() - 1].size() >= 1 &&
+                 data.participantIds[data.participantIds.size() - 1].size() <= 128
                )
              ) &&
              isOptMap(data, 'participantNames', 100) &&
@@ -683,26 +720,96 @@ service cloud.firestore {
     }
 
     // ===============================================================
+    // User Verification & Notification Authorization Helpers
+    // ===============================================================
+
+    function isTokenEmailMatchingUserDoc(data) {
+      return !('email' in request.auth.token) ||
+             !(request.auth.token.email is string) ||
+             data.email.lower() == request.auth.token.email.lower();
+    }
+
+    function isCampusVerificationAuthorized(data) {
+      return !('campusVerified' in data) ||
+             data.campusVerified != true ||
+             (
+               'email_verified' in request.auth.token &&
+               request.auth.token.email_verified == true &&
+               'email' in request.auth.token &&
+               request.auth.token.email is string &&
+               request.auth.token.email.lower().matches('^[^@]+@[^@]+\\.(edu|edu\\.[a-z]{2}|ac\\.[a-z]{2}|ernet\\.in|res\\.in)$')
+             );
+    }
+
+    function isAuthorizedNotificationCreate(userId, data) {
+      return isOwner(userId) ||
+             (
+               data.type == 'JOIN_REQUEST' &&
+               'projectId' in data &&
+               data.projectId is string &&
+               data.projectId.size() > 0 &&
+               projectExists(data.projectId) &&
+               'leadId' in projectData(data.projectId) &&
+               projectData(data.projectId).leadId == userId
+             ) ||
+             (
+               data.type in ['JOIN_ACCEPTED', 'JOIN_REJECTED'] &&
+               'projectId' in data &&
+               data.projectId is string &&
+               data.projectId.size() > 0 &&
+               isLeadOfProject(data.projectId)
+             ) ||
+             (
+               data.type in ['DM', 'GROUP_CHAT'] &&
+               'projectId' in data &&
+               data.projectId is string &&
+               data.projectId.size() > 0 &&
+               isParticipantOfConversation(data.projectId)
+             ) ||
+             (
+               data.type in ['MENTION', 'CALL'] &&
+               'projectId' in data &&
+               data.projectId is string &&
+               data.projectId.size() > 0 &&
+               (isMemberOfProject(data.projectId) || isParticipantOfConversation(data.projectId))
+             ) ||
+             (
+               data.type in ['TASK', 'TASK_ASSIGNED', 'COMMENT', 'TEAM_INVITE', 'AUTOMATION', 'CHAT'] &&
+               'projectId' in data &&
+               data.projectId is string &&
+               data.projectId.size() > 0 &&
+               isMemberOfProject(data.projectId)
+             );
+    }
+
+    // ===============================================================
     // Project Update Authorization Helpers
     // ===============================================================
 
     function areImmutableProjectFieldsUnchanged() {
-      return (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
-             (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+      return (!('projectId' in resource.data) ||
+              resource.data.projectId == null ||
+              ('projectId' in request.resource.data &&
+               request.resource.data.projectId == resource.data.projectId)) &&
+             (!('createdAt' in resource.data) ||
+              resource.data.createdAt == null ||
+              ('createdAt' in request.resource.data &&
+               request.resource.data.createdAt == resource.data.createdAt));
     }
 
     function isLeadOrAllowedMemberUpdate() {
       return isProjectMember(resource.data) &&
+             'leadId' in resource.data &&
              (
                // Project Lead: full valid project updates, including member approvals and ownership transfer
                resource.data.leadId == request.auth.uid ||
                // Non-lead member: may update collaborative project metadata (e.g., progress, statuses, venue, github)
-               // or leave the project by removing ONLY themselves, but cannot alter leadId, joinCode, visibility, or others' roles
+               // or leave the project by removing ONLY themselves, but cannot alter leadId, joinCode, visibility, lastJoinCodeUsed, or others' roles
                (
                  request.resource.data.leadId == resource.data.leadId &&
                  (
                    !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-                     'members', 'leadId', 'joinCode', 'public', 'isPublic'
+                     'members', 'leadId', 'joinCode', 'public', 'isPublic', 'lastJoinCodeUsed'
                    ]) ||
                    (
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
@@ -717,14 +824,20 @@ service cloud.firestore {
     }
 
     function isSelfJoinViaCodeUpdate() {
-      return 'leadId' in resource.data &&
+      return 'joinCode' in resource.data &&
+             resource.data.joinCode is string &&
+             resource.data.joinCode.size() >= 6 &&
+             'leadId' in resource.data &&
              resource.data.leadId != request.auth.uid &&
              'members' in resource.data &&
              resource.data.members is map &&
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'lastJoinCodeUsed']) &&
+             'lastJoinCodeUsed' in request.resource.data &&
+             request.resource.data.lastJoinCodeUsed is string &&
+             request.resource.data.lastJoinCodeUsed == resource.data.joinCode + ':' + request.auth.uid &&
              request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid]) &&
              request.resource.data.members[request.auth.uid] == 'MEMBER' &&
-             (!(request.auth.uid in resource.data.members) || resource.data.members[request.auth.uid] == 'MEMBER');
+             !(request.auth.uid in resource.data.members);
     }
 
     // ===============================================================
@@ -743,6 +856,43 @@ service cloud.firestore {
                request.resource.data.createdAt == resource.data.createdAt));
     }
 
+    function areConversationMetadataUpdatesAuthorized() {
+      return (
+               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastMessageSenderId']) ||
+               ('lastMessageSenderId' in request.resource.data &&
+                request.resource.data.lastMessageSenderId == request.auth.uid)
+             ) &&
+             (
+               !request.resource.data.diff(resource.data).affectedKeys().hasAny(['readBy']) ||
+               (
+                 'readBy' in request.resource.data &&
+                 request.resource.data.readBy is map &&
+                 (
+                   (!('readBy' in resource.data) || !(resource.data.readBy is map))
+                     ? request.resource.data.readBy.keys().hasOnly([request.auth.uid])
+                     : request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid])
+                 )
+               )
+             );
+    }
+
+    function isValidGroupParticipantUpdate() {
+      return (
+               'createdBy' in resource.data &&
+               resource.data.createdBy == request.auth.uid
+             ) ||
+             (
+               request.resource.data.participantIds.hasAll(resource.data.participantIds) &&
+               request.resource.data.participantIds.size() >= resource.data.participantIds.size()
+             ) ||
+             (
+               resource.data.participantIds.hasAll(request.resource.data.participantIds) &&
+               !(request.auth.uid in request.resource.data.participantIds) &&
+               request.resource.data.participantIds.size() == resource.data.participantIds.size() - 1 &&
+               request.resource.data.participantIds.concat([request.auth.uid]).hasAll(resource.data.participantIds)
+             );
+    }
+
     // ===============================================================
     // 1. Users Collection & In-App Notifications
     // ===============================================================
@@ -753,12 +903,19 @@ service cloud.firestore {
       allow read: if isSignedIn();
 
       allow create: if isOwner(userId) &&
-                       isValidUser(request.resource.data, userId);
+                       isValidUser(request.resource.data, userId) &&
+                       isTokenEmailMatchingUserDoc(request.resource.data) &&
+                       isCampusVerificationAuthorized(request.resource.data);
 
       allow update: if isOwner(userId) &&
                        isValidUser(request.resource.data, userId) &&
-                       (!('userId' in resource.data) || request.resource.data.userId == resource.data.userId) &&
-                       (!('email' in resource.data) || request.resource.data.email == resource.data.email);
+                       isTokenEmailMatchingUserDoc(request.resource.data) &&
+                       isCampusVerificationAuthorized(request.resource.data) &&
+                       (!('userId' in resource.data) ||
+                        resource.data.userId == null ||
+                        ('userId' in request.resource.data && request.resource.data.userId == resource.data.userId)) &&
+                       (!('email' in resource.data) ||
+                        ('email' in request.resource.data && request.resource.data.email == resource.data.email));
 
       // Prevent accidental deletion of user profile documents.
       allow delete: if false;
@@ -766,12 +923,13 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
 
-        // Any signed-in user may dispatch an unread notification to a recipient.
+        // Authorized senders only (owner self-alerts or verified shared project/conversation/join-request relationship).
         allow create: if isSignedIn() &&
                          userId.size() > 0 &&
                          userId.size() <= 128 &&
                          isValidNotification(request.resource.data, userId) &&
-                         request.resource.data.read == false;
+                         request.resource.data.read == false &&
+                         isAuthorizedNotificationCreate(userId, request.resource.data);
 
         // Owner may only toggle/update the read status.
         allow update: if isOwner(userId) &&
@@ -787,15 +945,11 @@ service cloud.firestore {
     // ===============================================================
 
     match /projects/{projectId} {
-      // Single-doc fetches require membership or public visibility.
-      // Collection list queries allow signed-in users so Explore (unfiltered public feed)
-      // and Join-by-Code (private joinCode lookup) succeed without PERMISSION_DENIED;
-      // all sensitive project internals reside in member-gated subcollections below.
-      allow get: if isSignedIn() &&
-                    resource != null &&
-                    (isProjectMember(resource.data) || isPublicProject(resource.data));
-
-      allow list: if isSignedIn();
+      // Strict access: only project members or explicitly public projects may be read/queried.
+      // Private project enumeration via unfiltered list queries is blocked.
+      allow read: if isSignedIn() &&
+                     resource != null &&
+                     (isProjectMember(resource.data) || isPublicProject(resource.data));
 
       allow create: if isSignedIn() &&
                        isValidProject(request.resource.data, projectId) &&
@@ -973,7 +1127,40 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // 3. Join Requests Collection (Campus Discovery)
+    // 3. Join Codes Collection (Exact-Code Project Lookup)
+    // ===============================================================
+
+    match /join_codes/{code} {
+      // Exact-code lookup only; collection queries are blocked to prevent enumerating private codes.
+      allow get: if isSignedIn();
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+                       isValidJoinCode(request.resource.data, code) &&
+                       request.resource.data.leadId == request.auth.uid &&
+                       isLeadOfProjectAfter(request.resource.data.projectId);
+
+      allow update: if isSignedIn() &&
+                       resource != null &&
+                       (
+                         ('leadId' in resource.data && resource.data.leadId == request.auth.uid) ||
+                         ('projectId' in resource.data && isLeadOfProject(resource.data.projectId))
+                       ) &&
+                       isValidJoinCode(request.resource.data, code) &&
+                       request.resource.data.leadId == request.auth.uid &&
+                       isLeadOfProject(request.resource.data.projectId) &&
+                       (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId);
+
+      allow delete: if isSignedIn() &&
+                       resource != null &&
+                       (
+                         ('leadId' in resource.data && resource.data.leadId == request.auth.uid) ||
+                         ('projectId' in resource.data && isLeadOfProject(resource.data.projectId))
+                       );
+    }
+
+    // ===============================================================
+    // 4. Join Requests Collection (Campus Discovery)
     // ===============================================================
 
     match /join_requests/{requestId} {
@@ -1011,7 +1198,7 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // 4. Conversations & Direct / Group Messaging
+    // 5. Conversations & Direct / Group Messaging
     // ===============================================================
 
     match /conversations/{conversationId} {
@@ -1040,16 +1227,20 @@ service cloud.firestore {
                        isConversationParticipant(resource.data) &&
                        isValidConversation(request.resource.data, conversationId) &&
                        areImmutableConversationFieldsUnchanged() &&
+                       areConversationMetadataUpdatesAuthorized() &&
                        (
                          (
+                           'type' in resource.data &&
                            resource.data.type == 'DIRECT' &&
                            request.resource.data.participantIds == resource.data.participantIds
                          ) ||
                          (
+                           'type' in resource.data &&
                            resource.data.type == 'GROUP' &&
                            request.resource.data.participantIds.size() >= 1 &&
                            request.resource.data.participantIds.size() <= 100 &&
-                           isReqStr(request.resource.data, 'title', 1, 120)
+                           isReqStr(request.resource.data, 'title', 1, 120) &&
+                           isValidGroupParticipantUpdate()
                          )
                        );
 

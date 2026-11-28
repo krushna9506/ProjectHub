@@ -166,4 +166,10 @@ public class AuthViewModel extends ViewModel {
         authRepository.logout();
         currentUser.setValue(null);
     }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        authRepository.clearListeners();
+    }
 }
