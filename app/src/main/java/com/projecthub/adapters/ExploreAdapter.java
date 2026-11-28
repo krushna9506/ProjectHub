@@ -19,11 +19,12 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
 
     public interface OnProjectClickListener {
         void onRequestJoin(Project project);
+        void onJoinDirectly(Project project);
     }
 
     private List<Project> projectList = new ArrayList<>();
     private final OnProjectClickListener listener;
-    private String currentUserId;
+    private final String currentUserId;
 
     public ExploreAdapter(String currentUserId, OnProjectClickListener listener) {
         this.currentUserId = currentUserId;
@@ -46,10 +47,17 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
     public void onBindViewHolder(@NonNull ExploreViewHolder holder, int position) {
         Project project = projectList.get(position);
 
-        holder.tvProjectTitle.setText(project.getTitle());
-        holder.tvLeadName.setText("Lead: " + (project.getLeadName() != null ? project.getLeadName() : "Unknown"));
-        holder.tvProjectDesc.setText(project.getDescription());
+        holder.tvProjectTitle.setText(project.getTitle() != null ? project.getTitle() : "Untitled");
+        holder.tvLeadName.setText("👤 Lead: " + (project.getLeadName() != null ? project.getLeadName() : "Team Lead"));
+        holder.tvProjectDesc.setText(project.getDescription() != null ? project.getDescription() : "");
         holder.tvCategory.setText(project.getCategory() != null ? project.getCategory().toUpperCase() : "GENERAL");
+
+        if (project.getJoinCode() != null && !project.getJoinCode().isEmpty()) {
+            holder.tvJoinCodeBadge.setVisibility(View.VISIBLE);
+            holder.tvJoinCodeBadge.setText("Code: " + project.getJoinCode());
+        } else {
+            holder.tvJoinCodeBadge.setVisibility(View.GONE);
+        }
 
         if (project.getLookingFor() != null && !project.getLookingFor().isEmpty()) {
             holder.layoutLookingFor.setVisibility(View.VISIBLE);
@@ -58,14 +66,27 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
             holder.layoutLookingFor.setVisibility(View.GONE);
         }
 
-        // Disable button if current user is lead or already a member
-        boolean isMemberOrLead = project.getMembers() != null && project.getMembers().containsKey(currentUserId);
+        // Check membership status
+        boolean isMemberOrLead = false;
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            if (currentUserId.equals(project.getLeadId())) {
+                isMemberOrLead = true;
+            } else if (project.getMembers() != null && project.getMembers().containsKey(currentUserId)) {
+                isMemberOrLead = true;
+            }
+        }
+
         if (isMemberOrLead) {
-            holder.btnRequestJoin.setText("Already Member");
-            holder.btnRequestJoin.setEnabled(false);
+            holder.layoutActionsRow.setVisibility(View.GONE);
+            holder.btnAlreadyMember.setVisibility(View.VISIBLE);
         } else {
-            holder.btnRequestJoin.setText("Request to Join");
-            holder.btnRequestJoin.setEnabled(true);
+            holder.layoutActionsRow.setVisibility(View.VISIBLE);
+            holder.btnAlreadyMember.setVisibility(View.GONE);
+
+            holder.btnQuickJoin.setOnClickListener(v -> {
+                if (listener != null) listener.onJoinDirectly(project);
+            });
+
             holder.btnRequestJoin.setOnClickListener(v -> {
                 if (listener != null) listener.onRequestJoin(project);
             });
@@ -78,9 +99,9 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
     }
 
     static class ExploreViewHolder extends RecyclerView.ViewHolder {
-        TextView tvProjectTitle, tvCategory, tvLeadName, tvProjectDesc, tvLookingFor;
-        View layoutLookingFor;
-        MaterialButton btnRequestJoin;
+        TextView tvProjectTitle, tvCategory, tvLeadName, tvProjectDesc, tvLookingFor, tvJoinCodeBadge;
+        View layoutLookingFor, layoutActionsRow;
+        MaterialButton btnQuickJoin, btnRequestJoin, btnAlreadyMember;
 
         public ExploreViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -89,8 +110,12 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
             tvLeadName = itemView.findViewById(R.id.tvLeadName);
             tvProjectDesc = itemView.findViewById(R.id.tvProjectDesc);
             tvLookingFor = itemView.findViewById(R.id.tvLookingFor);
+            tvJoinCodeBadge = itemView.findViewById(R.id.tvJoinCodeBadge);
             layoutLookingFor = itemView.findViewById(R.id.layoutLookingFor);
+            layoutActionsRow = itemView.findViewById(R.id.layoutActionsRow);
+            btnQuickJoin = itemView.findViewById(R.id.btnQuickJoin);
             btnRequestJoin = itemView.findViewById(R.id.btnRequestJoin);
+            btnAlreadyMember = itemView.findViewById(R.id.btnAlreadyMember);
         }
     }
 }

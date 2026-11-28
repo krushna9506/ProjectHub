@@ -6,8 +6,10 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="14dp"
     app:cardElevation="2dp"
+    app:strokeColor="@color/divider"
+    app:strokeWidth="1dp"
     app:cardBackgroundColor="@color/surface">
 
     <LinearLayout
@@ -16,6 +18,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Top Header: Title, Category Badge, and Code Badge -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -27,7 +30,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="SIH Smart Irrigation App"
+                android:text="Project Title"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -36,7 +39,7 @@
                 android:id="@+id/tvCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/primary_light"
+                android:background="@drawable/bg_category_pill"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
                 android:text="SIH HACKATHON"
@@ -45,14 +48,36 @@
                 android:textColor="@color/primary" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvLeadName"
-            android:layout_width="wrap_content"
+        <!-- Subheader: Lead & Code Badge -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:layout_marginTop="4dp"
-            android:text="Lead: Rahul Sharma"
-            android:textSize="13sp"
-            android:textColor="@color/text_secondary" />
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvLeadName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="👤 Lead: Rahul Sharma"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvJoinCodeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_code_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:fontFamily="monospace"
+                android:text="Code: VN8TVE"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvProjectDesc"
@@ -76,7 +101,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Looking for: "
+                android:text="🚀 Looking for: "
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/accent" />
@@ -90,13 +115,47 @@
                 android:textColor="@color/text_primary" />
         </LinearLayout>
 
+        <!-- Actions Row: Quick Join & Request Join -->
+        <LinearLayout
+            android:id="@+id/layoutActionsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickJoin"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="Join via Code"
+                android:textSize="13sp"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRequestJoin"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="Request to Join"
+                android:textSize="13sp"
+                app:cornerRadius="8dp" />
+        </LinearLayout>
+
+        <!-- Shown if user is already a member -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRequestJoin"
+            android:id="@+id/btnAlreadyMember"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Request to Join"
-            android:textSize="14sp"
+            android:text="✓ Already a Team Member"
+            android:textSize="13sp"
+            android:enabled="false"
+            android:visibility="gone"
             app:cornerRadius="8dp" />
 
     </LinearLayout>

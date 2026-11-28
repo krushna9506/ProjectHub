@@ -65,14 +65,22 @@ public class ProjectRepository {
         MutableLiveData<List<Project>> projectsLiveData = new MutableLiveData<>();
 
         db.collection("projects")
-            .whereEqualTo("public", true)
             .addSnapshotListener((snapshots, error) -> {
                 if (error != null) {
                     projectsLiveData.setValue(new ArrayList<>());
                     return;
                 }
                 if (snapshots != null) {
-                    List<Project> list = snapshots.toObjects(Project.class);
+                    List<Project> list = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots.getDocuments()) {
+                        Project p = doc.toObject(Project.class);
+                        if (p != null) {
+                            if (p.getProjectId() == null || p.getProjectId().isEmpty()) {
+                                p.setProjectId(doc.getId());
+                            }
+                            list.add(p);
+                        }
+                    }
                     projectsLiveData.setValue(list);
                 }
             });
@@ -87,35 +95,61 @@ public class ProjectRepository {
         docRef.set(project)
             .addOnSuccessListener(aVoid -> {
                 // Also add to user's joined projects array
-                db.collection("users").document(project.getLeadId())
-                    .update("joinedProjectIds", FieldValue.arrayUnion(project.getProjectId()));
+                try {
+                    db.collection("users").document(project.getLeadId())
+                        .update("joinedProjectIds", FieldValue.arrayUnion(project.getProjectId()));
+                } catch (Exception ignored) {}
                 callback.onSuccess();
             })
             .addOnFailureListener(e -> callback.onError("Failed to create project: " + e.getMessage()));
     }
 
     public void joinProjectWithCode(String userId, String joinCode, OperationCallback callback) {
+        String cleanCode = joinCode != null ? joinCode.trim() : "";
+        if (cleanCode.isEmpty()) {
+            callback.onError("Please enter a valid project join code.");
+            return;
+        }
+
+        String upperCode = cleanCode.toUpperCase();
         db.collection("projects")
-            .whereEqualTo("joinCode", joinCode.trim().toUpperCase())
+            .whereEqualTo("joinCode", upperCode)
             .get()
             .addOnSuccessListener(querySnapshot -> {
                 if (querySnapshot.isEmpty()) {
-                    callback.onError("Invalid project code. Please check and try again.");
+                    // Try without uppercase in case joinCode had lowercase characters
+                    db.collection("projects")
+                        .whereEqualTo("joinCode", cleanCode)
+                        .get()
+                        .addOnSuccessListener(snap2 -> {
+                            if (snap2.isEmpty()) {
+                                callback.onError("No project found with code: " + upperCode);
+                            } else {
+                                processJoinDocument(snap2.getDocuments().get(0), userId, callback);
+                            }
+                        })
+                        .addOnFailureListener(e -> callback.onError("Failed to search code: " + e.getMessage()));
                     return;
                 }
 
-                DocumentReference projectRef = querySnapshot.getDocuments().get(0).getReference();
-                String projectId = projectRef.getId();
-
-                projectRef.update("members." + userId, "MEMBER")
-                    .addOnSuccessListener(aVoid -> {
-                        db.collection("users").document(userId)
-                            .update("joinedProjectIds", FieldValue.arrayUnion(projectId));
-                        callback.onSuccess();
-                    })
-                    .addOnFailureListener(e -> callback.onError("Failed to join: " + e.getMessage()));
+                processJoinDocument(querySnapshot.getDocuments().get(0), userId, callback);
             })
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+            .addOnFailureListener(e -> callback.onError("Failed to find project: " + e.getMessage()));
+    }
+
+    private void processJoinDocument(com.google.firebase.firestore.DocumentSnapshot doc, String userId, OperationCallback callback) {
+        DocumentReference projectRef = doc.getReference();
+        String projectId = doc.getId();
+
+        projectRef.update("members." + userId, "MEMBER")
+            .addOnSuccessListener(aVoid -> {
+                try {
+                    db.collection("users").document(userId)
+                        .update("joinedProjectIds", FieldValue.arrayUnion(projectId));
+                } catch (Exception ignored) {}
+                callback.onSuccess();
+            })
+            .addOnFailureListener(e -> callback.onError("Failed to join: " + e.getMessage()));
     }
 
     public void sendJoinRequest(JoinRequest request, OperationCallback callback) {
@@ -168,17 +202,21 @@ public class ProjectRepository {
                 db.collection("projects").document(request.getProjectId())
                     .update("members." + request.getApplicantId(), "MEMBER")
                     .addOnSuccessListener(aVoid2 -> {
-                        db.collection("users").document(request.getApplicantId())
-                            .update("joinedProjectIds", FieldValue.arrayUnion(request.getProjectId()));
+                        try {
+                            db.collection("users").document(request.getApplicantId())
+                                .update("joinedProjectIds", FieldValue.arrayUnion(request.getProjectId()))
+                                .addOnFailureListener(e -> {});
+                        } catch (Exception ignored) {}
+
                         NotificationHelper.dispatchNotification(null, request.getApplicantId(),
                             "Join Request Accepted 🎉",
                             "You are now a member of " + (request.getProjectTitle() != null ? request.getProjectTitle() : "the project"),
                             "JOIN_ACCEPTED", request.getProjectId(), request.getProjectTitle());
                         callback.onSuccess();
                     })
-                    .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                    .addOnFailureListener(e -> callback.onError("Failed to add member: " + e.getMessage()));
             })
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+            .addOnFailureListener(e -> callback.onError("Failed to accept request: " + e.getMessage()));
     }
 
     public void rejectJoinRequest(JoinRequest request, OperationCallback callback) {

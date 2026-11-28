@@ -11,6 +11,7 @@ public class User {
     private String rollNumber;
     private String profileImageUrl;
     private List<String> joinedProjectIds;
+    private String fcmToken;
 
     public User() {
         this.joinedProjectIds = new ArrayList<>();
@@ -24,6 +25,9 @@ public class User {
         this.rollNumber = rollNumber;
         this.joinedProjectIds = new ArrayList<>();
     }
+
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.projecthub.R;
 import com.projecthub.adapters.ProjectAdapter;
@@ -211,8 +212,12 @@ public class MainActivity extends AppCompatActivity {
             .setView(dialogView)
             .setPositiveButton("Join", (dialog, which) -> {
                 String code = etJoinCode.getText() != null ? etJoinCode.getText().toString().trim() : "";
-                if (!code.isEmpty() && authViewModel.getCurrentUserId() != null) {
-                    dashboardViewModel.joinProject(authViewModel.getCurrentUserId(), code);
+                String uid = authViewModel.getCurrentUserId();
+                if (uid == null && FirebaseAuth.getInstance().getCurrentUser() != null) {
+                    uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                }
+                if (!code.isEmpty() && uid != null) {
+                    dashboardViewModel.joinProject(uid, code);
                 } else {
                     Toast.makeText(this, "Please enter a valid join code", Toast.LENGTH_SHORT).show();
                 }

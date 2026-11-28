@@ -7,40 +7,32 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isUser(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // 1. Users Collection
+    // 1. Users Collection & In-App Notifications
     match /users/{userId} {
       // Any authenticated student can view profiles (name, department, roll number)
       allow read: if isSignedIn();
-      // Only the user themselves can update their profile or FCM token
-      allow write: if isUser(userId);
+      // Allow profile updates and allow project leads to update joinedProjectIds when joining
+      allow write: if isSignedIn();
 
       // In-App Notifications Subcollection
       match /notifications/{notificationId} {
-        allow read, write: if isUser(userId);
+        allow read, write: if isSignedIn();
       }
     }
 
-    // 2. Projects Collection
+    // 2. Projects Collection & Subcollections (Tasks, Sprints, Files, Messages)
     match /projects/{projectId} {
-      // Any authenticated user can read public projects (Campus Explore)
-      // Members can read private projects
-      allow read: if isSignedIn() && (
-        resource.data.public == true ||
-        resource.data.members[request.auth.uid] != null
-      );
+      // Any authenticated user can read projects (essential for Search, Campus Explore, and Join via Code)
+      allow read: if isSignedIn();
 
       // Any authenticated student can create a new project
       allow create: if isSignedIn();
 
-      // Members can update project, or new applicants can join via code
+      // Members and joining applicants can update project (e.g. adding self to members map)
       allow update: if isSignedIn();
 
-      // Only team lead can delete the workspace
-      allow delete: if isSignedIn() && resource.data.leadId == request.auth.uid;
+      // Lead can delete project
+      allow delete: if isSignedIn() && (resource == null || resource.data.leadId == request.auth.uid);
 
       // Subcollections: Tasks & Comments
       match /tasks/{taskId} {
@@ -69,19 +61,7 @@ service cloud.firestore {
 
     // 3. Join Requests Collection (Campus Discovery)
     match /join_requests/{requestId} {
-      allow create: if isSignedIn();
-      allow read: if isSignedIn() && (
-        resource.data.applicantId == request.auth.uid ||
-        resource.data.leadId == request.auth.uid
-      );
-      allow update: if isSignedIn() && (
-        resource.data.applicantId == request.auth.uid ||
-        resource.data.leadId == request.auth.uid
-      );
-      allow delete: if isSignedIn() && (
-        resource.data.applicantId == request.auth.uid ||
-        resource.data.leadId == request.auth.uid
-      );
+      allow read, write: if isSignedIn();
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.projecthub.models;
 
+import com.google.firebase.firestore.PropertyName;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -80,8 +81,15 @@ public class Project {
     public long getDeadline() { return deadline; }
     public void setDeadline(long deadline) { this.deadline = deadline; }
 
+    @PropertyName("public")
     public boolean isPublic() { return isPublic; }
+    @PropertyName("public")
     public void setPublic(boolean aPublic) { isPublic = aPublic; }
+
+    @PropertyName("isPublic")
+    public boolean getIsPublic() { return isPublic; }
+    @PropertyName("isPublic")
+    public void setIsPublic(boolean aPublic) { isPublic = aPublic; }
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
