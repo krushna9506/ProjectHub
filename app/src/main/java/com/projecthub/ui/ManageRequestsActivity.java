@@ -47,29 +47,11 @@ public class ManageRequestsActivity extends AppCompatActivity {
             @Override
             public void onAccept(JoinRequest request) {
                 dashboardViewModel.acceptJoinRequest(request);
-                com.projecthub.utils.NotificationHelper.dispatchNotification(
-                    ManageRequestsActivity.this,
-                    request.getApplicantId(),
-                    "Join Request Accepted! 🎉",
-                    "You have been accepted into " + request.getProjectTitle(),
-                    "JOIN_ACCEPTED",
-                    request.getProjectId(),
-                    request.getProjectTitle()
-                );
             }
 
             @Override
             public void onReject(JoinRequest request) {
                 dashboardViewModel.rejectJoinRequest(request);
-                com.projecthub.utils.NotificationHelper.dispatchNotification(
-                    ManageRequestsActivity.this,
-                    request.getApplicantId(),
-                    "Join Request Update",
-                    "Your request to join " + request.getProjectTitle() + " was not accepted.",
-                    "JOIN_REJECTED",
-                    request.getProjectId(),
-                    request.getProjectTitle()
-                );
             }
         });
 

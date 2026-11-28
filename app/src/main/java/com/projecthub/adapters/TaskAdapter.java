@@ -13,10 +13,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.projecthub.R;
+import com.projecthub.models.Project;
 import com.projecthub.models.Task;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -29,8 +33,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     private List<Task> tasks = new ArrayList<>();
+    private List<String> availableStatuses = Project.defaultStatuses();
     private final OnTaskStatusChangeListener statusChangeListener;
     private final OnTaskClickListener clickListener;
+    private final SimpleDateFormat dueFormat = new SimpleDateFormat("MMM d", Locale.getDefault());
 
     public TaskAdapter(OnTaskStatusChangeListener statusChangeListener, OnTaskClickListener clickListener) {
         this.statusChangeListener = statusChangeListener;
@@ -46,6 +52,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         notifyDataSetChanged();
     }
 
+    public void setAvailableStatuses(List<String> statuses) {
+        if (statuses != null && !statuses.isEmpty()) {
+            this.availableStatuses = new ArrayList<>(statuses);
+        } else {
+            this.availableStatuses = Project.defaultStatuses();
+        }
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -58,7 +73,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         Task task = tasks.get(position);
         Context context = holder.itemView.getContext();
 
-        holder.tvTitle.setText(task.getTitle());
+        String keyPrefix = (task.getTaskKey() != null && !task.getTaskKey().isEmpty())
+                ? "[" + task.getTaskKey() + "] " : "";
+        holder.tvTitle.setText(keyPrefix + (task.getTitle() != null ? task.getTitle() : "Untitled"));
         holder.tvDesc.setText(task.getDescription() != null ? task.getDescription() : "");
 
         // Issue Type Badge
@@ -97,47 +114,81 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         int commentsCount = task.getCommentsCount();
         if (commentsCount > 0) {
             holder.tvCommentsCount.setVisibility(View.VISIBLE);
-            holder.tvCommentsCount.setText("💬 " + commentsCount);
+            holder.tvCommentsCount.setText(commentsCount + (commentsCount == 1 ? " reply" : " replies"));
         } else {
             holder.tvCommentsCount.setVisibility(View.GONE);
         }
 
+        // Subtasks, Blocker, Due Date badges
+        int totalSub = task.getTotalSubtasksCount();
+        int doneSub = task.getCompletedSubtasksCount();
+        if (totalSub > 0) {
+            holder.tvSubtasksBadge.setVisibility(View.VISIBLE);
+            holder.tvSubtasksBadge.setText(doneSub + "/" + totalSub + " subtasks");
+        } else {
+            holder.tvSubtasksBadge.setVisibility(View.GONE);
+        }
+
+        if (task.getDependsOnTaskKey() != null && !task.getDependsOnTaskKey().isEmpty()) {
+            holder.tvBlockerBadge.setVisibility(View.VISIBLE);
+            holder.tvBlockerBadge.setText("Blocked: " + task.getDependsOnTaskKey());
+        } else {
+            holder.tvBlockerBadge.setVisibility(View.GONE);
+        }
+
+        if (task.getDueDate() > 0) {
+            holder.tvDueDateBadge.setVisibility(View.VISIBLE);
+            holder.tvDueDateBadge.setText("Due " + dueFormat.format(new Date(task.getDueDate())));
+        } else {
+            holder.tvDueDateBadge.setVisibility(View.GONE);
+        }
+
         // Assignee
-        String assignedText = task.getAssignedToName() != null && !task.getAssignedToName().isEmpty() 
-            ? "👤 " + task.getAssignedToName() : "👤 Unassigned";
+        String assignedText = task.getAssignedToName() != null && !task.getAssignedToName().isEmpty()
+                ? task.getAssignedToName() : "Unassigned";
         holder.tvAssignedTo.setText(assignedText);
 
-        // Status Tag & Quick Workflow Cycling: TODO -> IN_PROGRESS -> IN_REVIEW -> DONE -> TODO
+        // Status Tag & Cycling (supports custom statuses)
         String currentStatus = task.getStatus() != null ? task.getStatus() : "TODO";
+        String nextStatus = computeNextStatus(currentStatus);
+
         if ("DONE".equalsIgnoreCase(currentStatus)) {
             holder.tvStatusBadge.setText("● DONE");
-            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_done));
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_status_done);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_done_text));
             holder.btnStatusToggle.setText("Reopen");
-            holder.btnStatusToggle.setOnClickListener(v -> {
-                if (statusChangeListener != null) statusChangeListener.onStatusChange(task, "TODO");
-            });
         } else if ("IN_REVIEW".equalsIgnoreCase(currentStatus)) {
             holder.tvStatusBadge.setText("● IN REVIEW");
-            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_review));
-            holder.btnStatusToggle.setText("Done ✓");
-            holder.btnStatusToggle.setOnClickListener(v -> {
-                if (statusChangeListener != null) statusChangeListener.onStatusChange(task, "DONE");
-            });
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_status_review);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_review_text));
+            holder.btnStatusToggle.setText("Next: " + nextStatus);
         } else if ("IN_PROGRESS".equalsIgnoreCase(currentStatus)) {
             holder.tvStatusBadge.setText("● IN PROGRESS");
-            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_progress));
-            holder.btnStatusToggle.setText("Review →");
-            holder.btnStatusToggle.setOnClickListener(v -> {
-                if (statusChangeListener != null) statusChangeListener.onStatusChange(task, "IN_REVIEW");
-            });
-        } else {
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_status_progress);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_progress_text));
+            holder.btnStatusToggle.setText("Next: " + nextStatus);
+        } else if ("BLOCKED".equalsIgnoreCase(currentStatus)) {
+            holder.tvStatusBadge.setText("● BLOCKED");
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_status_blocked);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_blocked_text));
+            holder.btnStatusToggle.setText("Next: " + nextStatus);
+        } else if ("TODO".equalsIgnoreCase(currentStatus)) {
             holder.tvStatusBadge.setText("● TO DO");
-            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_todo));
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_status_todo);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_todo_text));
             holder.btnStatusToggle.setText("Start →");
-            holder.btnStatusToggle.setOnClickListener(v -> {
-                if (statusChangeListener != null) statusChangeListener.onStatusChange(task, "IN_PROGRESS");
-            });
+        } else {
+            holder.tvStatusBadge.setText("● " + currentStatus.replace('_', ' '));
+            holder.tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_task);
+            holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.issue_task));
+            holder.btnStatusToggle.setText("Next: " + nextStatus);
         }
+
+        holder.btnStatusToggle.setOnClickListener(v -> {
+            if (statusChangeListener != null) {
+                statusChangeListener.onStatusChange(task, nextStatus);
+            }
+        });
 
         // Card Click opens Task Details
         holder.cardTask.setOnClickListener(v -> {
@@ -145,6 +196,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 clickListener.onTaskClick(task);
             }
         });
+    }
+
+    private String computeNextStatus(String currentStatus) {
+        if (availableStatuses == null || availableStatuses.isEmpty()) {
+            return "IN_PROGRESS";
+        }
+        for (int i = 0; i < availableStatuses.size(); i++) {
+            if (availableStatuses.get(i).equalsIgnoreCase(currentStatus)) {
+                return availableStatuses.get((i + 1) % availableStatuses.size());
+            }
+        }
+        return availableStatuses.get(0);
     }
 
     @Override
@@ -156,6 +219,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         MaterialCardView cardTask;
         TextView tvIssueType, tvPriority, tvCommentsCount;
         TextView tvTitle, tvDesc, tvAssignedTo, tvStatusBadge;
+        TextView tvSubtasksBadge, tvBlockerBadge, tvDueDateBadge;
         MaterialButton btnStatusToggle;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -166,6 +230,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvCommentsCount = itemView.findViewById(R.id.tvTaskCommentsCount);
             tvTitle = itemView.findViewById(R.id.tvTaskTitle);
             tvDesc = itemView.findViewById(R.id.tvTaskDesc);
+            tvSubtasksBadge = itemView.findViewById(R.id.tvTaskSubtasksBadge);
+            tvBlockerBadge = itemView.findViewById(R.id.tvTaskBlockerBadge);
+            tvDueDateBadge = itemView.findViewById(R.id.tvTaskDueDateBadge);
             tvAssignedTo = itemView.findViewById(R.id.tvAssignedTo);
             tvStatusBadge = itemView.findViewById(R.id.tvTaskStatusBadge);
             btnStatusToggle = itemView.findViewById(R.id.btnStatusToggle);

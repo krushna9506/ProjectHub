@@ -19,6 +19,9 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -27,9 +30,12 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.projecthub.R;
 import com.projecthub.adapters.ProjectAdapter;
 import com.projecthub.models.AppNotification;
+import com.projecthub.utils.DeadlineReminderWorker;
 import com.projecthub.utils.NotificationHelper;
 import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
+
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private ProjectAdapter projectAdapter;
 
     private TextView tvGreeting, tvStudentInfo, tvUserAvatar, tvProjectCountBadge, tvNotificationBadge;
-    private View layoutEmptyProjects;
+    private View layoutEmptyProjects, layoutHeaderProfile;
     private ProgressBar pbLoading;
     private RecyclerView rvProjects;
     private MaterialButton btnCreateProject, btnJoinProject, btnExploreCampus, btnManageRequests;
@@ -49,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        layoutHeaderProfile = findViewById(R.id.layoutHeaderProfile);
         tvGreeting = findViewById(R.id.tvGreeting);
         tvStudentInfo = findViewById(R.id.tvStudentInfo);
         tvUserAvatar = findViewById(R.id.tvUserAvatar);
@@ -66,6 +73,12 @@ public class MainActivity extends AppCompatActivity {
 
         NotificationHelper.createNotificationChannel(this);
         checkNotificationPermission();
+        scheduleDeadlineWorker();
+
+        if (layoutHeaderProfile != null) {
+            layoutHeaderProfile.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, ProfileActivity.class)));
+        }
 
         btnNotifications.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, NotificationsActivity.class));
@@ -91,11 +104,13 @@ public class MainActivity extends AppCompatActivity {
         authViewModel.fetchCurrentUserProfile();
         authViewModel.getCurrentUser().observe(this, user -> {
             if (user != null) {
-                tvGreeting.setText("Hello, " + user.getName());
+                String badge = user.isCampusVerified() ? " ✓" : "";
+                tvGreeting.setText("Hello, " + user.getName() + badge);
                 if (user.getName() != null && !user.getName().isEmpty()) {
                     tvUserAvatar.setText(user.getName().substring(0, 1).toUpperCase());
                 }
-                tvStudentInfo.setText(user.getDepartment() + " • " + user.getRollNumber());
+                String roleLabel = "FACULTY_MENTOR".equalsIgnoreCase(user.getRole()) ? "Mentor" : user.getRollNumber();
+                tvStudentInfo.setText(user.getDepartment() + " • " + roleLabel);
                 loadProjects(user.getUserId());
                 registerFcmToken(user.getUserId());
                 observeNotifications(user.getUserId());
@@ -177,18 +192,32 @@ public class MainActivity extends AppCompatActivity {
                 tvNotificationBadge.setText(unread > 9 ? "9+" : String.valueOf(unread));
                 if (!list.isEmpty() && !list.get(0).isRead()) {
                     AppNotification top = list.get(0);
-                    NotificationHelper.showSystemNotification(
-                        MainActivity.this,
-                        top.getTitle() != null ? top.getTitle() : "ProjectHub Alert",
-                        top.getMessage() != null ? top.getMessage() : "New project activity",
-                        top.getProjectId(),
-                        top.getType()
-                    );
+                    String dedupKey = "notif_" + (top.getNotificationId() != null ? top.getNotificationId() : top.getTimestamp());
+                    if (NotificationHelper.shouldNotifyOnce(MainActivity.this, dedupKey)) {
+                        NotificationHelper.showSystemNotification(
+                            MainActivity.this,
+                            top.getTitle() != null ? top.getTitle() : "ProjectHub Alert",
+                            top.getMessage() != null ? top.getMessage() : "New project activity",
+                            top.getProjectId(),
+                            top.getType()
+                        );
+                    }
                 }
             } else {
                 tvNotificationBadge.setVisibility(View.GONE);
             }
         });
+    }
+
+    private void scheduleDeadlineWorker() {
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+            DeadlineReminderWorker.class, 12, TimeUnit.HOURS)
+            .build();
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "projecthub_deadline_alerts",
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        );
     }
 
     private void checkNotificationPermission() {

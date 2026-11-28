@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -11,77 +11,94 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Modern Top Header Bar -->
+        <!-- Elevated Top Header Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/surface"
-            android:elevation="1dp"
             android:orientation="horizontal"
-            android:paddingHorizontal="18dp"
-            android:paddingVertical="14dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
             android:gravity="center_vertical">
 
-            <!-- User Initials Avatar -->
-            <TextView
-                android:id="@+id/tvUserAvatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/bg_avatar_circle"
-                android:gravity="center"
-                android:textColor="@color/surface"
-                android:textSize="17sp"
-                android:textStyle="bold"
-                android:text="K" />
-
             <LinearLayout
+                android:id="@+id/layoutHeaderProfile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:orientation="vertical">
+                android:minHeight="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground">
 
                 <TextView
-                    android:id="@+id/tvGreeting"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome!"
-                    android:textSize="18sp"
+                    android:id="@+id/tvUserAvatar"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:gravity="center"
+                    android:textColor="@color/on_primary"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
+                    android:text="P" />
 
-                <TextView
-                    android:id="@+id/tvStudentInfo"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:text="Student Dashboard"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary" />
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvGreeting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome!"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvStudentInfo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Campus profile"
+                        android:textSize="12sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Notification Bell with Unread Badge -->
+            <!-- Notification Bell (48dp touch target) -->
             <FrameLayout
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="6dp">
+                android:layout_width="48dp"
+                android:layout_height="48dp">
 
                 <ImageButton
                     android:id="@+id/btnNotifications"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_bell"
-                    android:padding="8dp" />
+                    android:padding="12dp"
+                    android:contentDescription="Notifications" />
 
                 <TextView
                     android:id="@+id/tvNotificationBadge"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:layout_gravity="top|end"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginEnd="6dp"
                     android:background="@drawable/bg_avatar_circle"
                     android:backgroundTint="@color/priority_urgent"
-                    android:textColor="@color/surface"
+                    android:textColor="#FFFFFF"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:gravity="center"
@@ -91,14 +108,21 @@
 
             <ImageButton
                 android:id="@+id/btnLogout"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_logout"
-                android:padding="8dp" />
+                android:padding="12dp"
+                app:tint="@color/text_secondary"
+                android:contentDescription="Log out" />
         </LinearLayout>
 
-        <!-- Quick Action Hub -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <!-- Quick Action Grid -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -107,7 +131,6 @@
             android:paddingTop="14dp"
             android:paddingBottom="6dp">
 
-            <!-- Primary Actions -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -120,32 +143,37 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     android:text="New Project"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
                     android:maxLines="1"
                     app:icon="@drawable/ic_add"
                     app:iconGravity="textStart"
-                    app:iconPadding="4dp"
-                    app:iconTint="@color/surface"
+                    app:iconPadding="6dp"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/on_primary"
                     app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExploreCampus"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Explore Campus"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
                     android:maxLines="1"
+                    android:textColor="@color/on_accent_container"
+                    app:backgroundTint="@color/accent_light"
                     app:icon="@drawable/ic_explore"
                     app:iconGravity="textStart"
-                    app:iconPadding="4dp"
-                    app:iconTint="@color/surface"
-                    app:backgroundTint="@color/accent"
+                    app:iconPadding="6dp"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/accent"
                     app:cornerRadius="12dp" />
             </LinearLayout>
 
-            <!-- Secondary Actions: Tonal Buttons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -154,39 +182,45 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnJoinProject"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     android:text="Join via Code"
-                    android:textSize="11.5sp"
+                    android:textSize="12sp"
                     android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    app:strokeColor="@color/divider"
                     app:icon="@drawable/ic_key"
                     app:iconGravity="textStart"
-                    app:iconPadding="4dp"
+                    app:iconPadding="6dp"
+                    app:iconSize="16dp"
                     app:iconTint="@color/primary"
                     app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnManageRequests"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Join Requests"
-                    android:textSize="11.5sp"
+                    android:textSize="12sp"
                     android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    app:strokeColor="@color/divider"
                     app:icon="@drawable/ic_mail"
                     app:iconGravity="textStart"
-                    app:iconPadding="4dp"
-                    app:iconTint="@color/text_primary"
+                    app:iconPadding="6dp"
+                    app:iconSize="16dp"
+                    app:iconTint="@color/primary"
                     app:cornerRadius="12dp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Section Header: My Projects -->
+        <!-- Section Header: My Workspaces -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -200,7 +234,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="My Workspaces"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
@@ -209,12 +243,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_category_pill"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
+                android:background="@drawable/bg_code_pill"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/on_primary_container"
                 android:text="0 projects" />
         </LinearLayout>
 
@@ -228,10 +262,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingTop="2dp"
-                android:paddingBottom="20dp" />
+                android:paddingTop="4dp"
+                android:paddingBottom="24dp" />
 
-            <!-- Clean Empty State -->
             <LinearLayout
                 android:id="@+id/layoutEmptyProjects"
                 android:layout_width="match_parent"
@@ -239,19 +272,20 @@
                 android:layout_gravity="center"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="24dp"
+                android:padding="28dp"
                 android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="44sp"
-                    android:text="🚀" />
+                <ImageView
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:src="@drawable/ic_launcher_brand"
+                    android:alpha="0.85"
+                    android:contentDescription="Empty workspaces" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:text="No Projects Yet"
                     android:textSize="17sp"
                     android:textStyle="bold"
@@ -260,8 +294,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Create a new workspace or join an existing campus team with a code."
+                    android:layout_marginTop="6dp"
+                    android:text="Start a workspace from a template or join a campus team with a code."
                     android:textAlignment="center"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />

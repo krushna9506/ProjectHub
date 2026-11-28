@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
@@ -23,7 +24,18 @@ public class NotificationHelper {
 
     public static final String CHANNEL_ID = "projecthub_channel";
     public static final String CHANNEL_NAME = "ProjectHub Alerts";
-    public static final String CHANNEL_DESC = "Notifications for project tasks, messages, and join requests";
+    public static final String CHANNEL_DESC = "Notifications for tasks, mentions, comments, join requests, and deadlines";
+    private static final String PREFS_NAME = "projecthub_notified_keys";
+
+    public static boolean shouldNotifyOnce(Context context, String key) {
+        if (context == null || key == null || key.isEmpty()) return false;
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (prefs.getBoolean(key, false)) {
+            return false;
+        }
+        prefs.edit().putBoolean(key, true).apply();
+        return true;
+    }
 
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -110,7 +122,7 @@ public class NotificationHelper {
         if (context != null) {
             String currentUid = FirebaseAuth.getInstance().getCurrentUser() != null ? 
                 FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
-            if (recipientUserId.equals(currentUid)) {
+            if (recipientUserId.equals(currentUid) && shouldNotifyOnce(context, "notif_" + docRef.getId())) {
                 showSystemNotification(context, title, message, projectId, type);
             }
         }

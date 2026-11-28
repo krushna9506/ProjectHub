@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ProjectHub Dark Mode Palette (Indigo Slate + Emerald) -->
+    <color name="primary">#818CF8</color>
+    <color name="primary_dark">#6366F1</color>
+    <color name="primary_light">#1E1B4B</color>
+    <color name="on_primary">#0F172A</color>
+    <color name="on_primary_container">#E0E7FF</color>
+
+    <color name="accent">#34D399</color>
+    <color name="accent_light">#064E3B</color>
+    <color name="on_accent">#0F172A</color>
+    <color name="on_accent_container">#A7F3D0</color>
+
+    <!-- Surfaces, Canvas & Borders -->
+    <color name="background">#0B1120</color>
+    <color name="surface">#131C31</color>
+    <color name="surface_variant">#1B2640</color>
+    <color name="surface_elevated">#1E293B</color>
+    <color name="divider">#24324E</color>
+    <color name="chat_received_bg">#1E293B</color>
+    <color name="code_surface">#090D16</color>
+    <color name="code_text">#E2E8F0</color>
+
+    <!-- Typography -->
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="text_tertiary">#64748B</color>
+
+    <!-- Priority Tokens -->
+    <color name="priority_urgent">#F87171</color>
+    <color name="priority_high">#FBBF24</color>
+    <color name="priority_medium">#818CF8</color>
+    <color name="priority_low">#34D399</color>
+
+    <!-- Workflow Status Tokens (bg values are 16% alpha tints) -->
+    <color name="status_todo">#94A3B8</color>
+    <color name="status_todo_bg">#2994A3B8</color>
+    <color name="status_todo_text">#CBD5E1</color>
+
+    <color name="status_progress">#FBBF24</color>
+    <color name="status_progress_bg">#29F59E0B</color>
+    <color name="status_progress_text">#FCD34D</color>
+
+    <color name="status_review">#38BDF8</color>
+    <color name="status_review_bg">#290EA5E9</color>
+    <color name="status_review_text">#7DD3FC</color>
+
+    <color name="status_done">#34D399</color>
+    <color name="status_done_bg">#2910B981</color>
+    <color name="status_done_text">#6EE7B7</color>
+
+    <color name="status_blocked">#F87171</color>
+    <color name="status_blocked_bg">#29EF4444</color>
+    <color name="status_blocked_text">#FCA5A5</color>
+
+    <!-- Issue Type Tokens -->
+    <color name="issue_bug">#FCA5A5</color>
+    <color name="issue_bug_bg">#450A0A</color>
+    <color name="issue_feature">#C4B5FD</color>
+    <color name="issue_feature_bg">#2E1065</color>
+    <color name="issue_task">#A5B4FC</color>
+    <color name="issue_task_bg">#1E1B4B</color>
+    <color name="issue_doc">#6EE7B7</color>
+    <color name="issue_doc_bg">#064E3B</color>
+
+    <!-- Phase Tokens -->
+    <color name="phase_planning">#C4B5FD</color>
+    <color name="phase_planning_bg">#2E1065</color>
+    <color name="phase_design">#FCD34D</color>
+    <color name="phase_design_bg">#451A03</color>
+    <color name="phase_dev">#6EE7B7</color>
+    <color name="phase_dev_bg">#064E3B</color>
+    <color name="phase_review">#A5B4FC</color>
+    <color name="phase_review_bg">#1E1B4B</color>
+</resources>

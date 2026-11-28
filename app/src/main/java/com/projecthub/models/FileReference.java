@@ -8,11 +8,16 @@ public class FileReference {
     private String type; // "DOCUMENT", "IMAGE", "LINK", "CODE", "GITHUB"
     private String snippetContent;
     private String language;
+    private String uploadedById;
     private String uploadedByName;
+    private String storagePath;
+    private long fileSizeBytes;
+    private String accessLevel; // "MEMBERS_ONLY", "LEAD_ONLY", "PUBLIC"
     private long timestamp;
 
     public FileReference() {
         this.type = "LINK";
+        this.accessLevel = "MEMBERS_ONLY";
     }
 
     public FileReference(String fileId, String projectId, String name, String url, 
@@ -31,6 +36,7 @@ public class FileReference {
         this.snippetContent = snippetContent;
         this.language = language != null ? language : "General";
         this.uploadedByName = uploadedByName;
+        this.accessLevel = "MEMBERS_ONLY";
         this.timestamp = timestamp;
     }
 
@@ -55,8 +61,20 @@ public class FileReference {
     public String getLanguage() { return language != null ? language : "General"; }
     public void setLanguage(String language) { this.language = language; }
 
+    public String getUploadedById() { return uploadedById; }
+    public void setUploadedById(String uploadedById) { this.uploadedById = uploadedById; }
+
     public String getUploadedByName() { return uploadedByName; }
     public void setUploadedByName(String uploadedByName) { this.uploadedByName = uploadedByName; }
+
+    public String getStoragePath() { return storagePath; }
+    public void setStoragePath(String storagePath) { this.storagePath = storagePath; }
+
+    public long getFileSizeBytes() { return fileSizeBytes; }
+    public void setFileSizeBytes(long fileSizeBytes) { this.fileSizeBytes = fileSizeBytes; }
+
+    public String getAccessLevel() { return accessLevel != null && !accessLevel.isEmpty() ? accessLevel : "MEMBERS_ONLY"; }
+    public void setAccessLevel(String accessLevel) { this.accessLevel = accessLevel; }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }

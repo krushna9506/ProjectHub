@@ -59,3 +59,9 @@ desktop.ini
 # Captures and profiling
 /captures
 *.hprof
+
+# Web & Cloud Functions
+web/node_modules/
+web/dist/
+web/.env
+functions/node_modules/

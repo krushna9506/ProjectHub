@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.projecthub.models.AppNotification;
 import com.projecthub.models.JoinRequest;
 import com.projecthub.models.Project;
+import com.projecthub.models.User;
 import com.projecthub.repository.ProjectRepository;
 
 import java.util.List;
@@ -36,12 +37,33 @@ public class DashboardViewModel extends ViewModel {
     }
 
     public void createProject(Project project) {
+        createProjectWithTemplate(project, project.getTemplateType());
+    }
+
+    public void createProjectWithTemplate(Project project, String templateType) {
         isLoading.setValue(true);
-        repository.createProject(project, new ProjectRepository.OperationCallback() {
+        repository.createProjectWithTemplate(project, templateType, new ProjectRepository.OperationCallback() {
             @Override
             public void onSuccess() {
                 isLoading.setValue(false);
                 statusMessage.setValue("Project created successfully!");
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoading.setValue(false);
+                statusMessage.setValue("Error: " + message);
+            }
+        });
+    }
+
+    public void sendTeamOrMentorInvite(User targetUser, Project project, String inviterName, String inviteRole) {
+        isLoading.setValue(true);
+        repository.sendTeamOrMentorInvite(targetUser, project, inviterName, inviteRole, new ProjectRepository.OperationCallback() {
+            @Override
+            public void onSuccess() {
+                isLoading.setValue(false);
+                statusMessage.setValue("Invitation sent to " + targetUser.getName() + "!");
             }
 
             @Override
@@ -142,6 +164,12 @@ public class DashboardViewModel extends ViewModel {
 
     public void saveFcmToken(String userId, String token) {
         repository.saveUserFcmToken(userId, token);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        repository.clearListeners();
     }
 }
 

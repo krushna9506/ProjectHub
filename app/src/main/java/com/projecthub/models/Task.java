@@ -1,12 +1,17 @@
 package com.projecthub.models;
 
+import com.google.firebase.firestore.Exclude;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class Task {
     private String taskId;
     private String projectId;
     private String milestoneId;
     private String title;
     private String description;
-    private String status;    // "TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"
+    private String status;    // "TODO", "IN_PROGRESS", "IN_REVIEW", "DONE" or custom status
     private String priority;  // "LOW", "MEDIUM", "HIGH", "URGENT"
     private String issueType; // "TASK", "BUG", "FEATURE", "DOCUMENTATION"
     private int commentsCount;
@@ -17,6 +22,12 @@ public class Task {
     private String phase;
     private double timeSpentHours;
     private long startDate;
+    private List<Subtask> subtasks;
+    private String dependsOnTaskId;
+    private String dependsOnTaskKey;
+    private List<String> tags;
+    private String githubIssueUrl;
+    private int githubIssueNumber;
 
     public Task() {
         this.status = "TODO";
@@ -26,6 +37,9 @@ public class Task {
         this.commentsCount = 0;
         this.timeSpentHours = 0.0;
         this.startDate = System.currentTimeMillis();
+        this.subtasks = new ArrayList<>();
+        this.tags = new ArrayList<>();
+        this.githubIssueNumber = 0;
     }
 
     public Task(String taskId, String projectId, String milestoneId, String title, 
@@ -45,10 +59,15 @@ public class Task {
         this.status = status != null ? status : "TODO";
         this.priority = priority != null ? priority : "MEDIUM";
         this.issueType = issueType != null ? issueType : "TASK";
+        this.phase = "DEVELOPMENT";
         this.commentsCount = 0;
         this.assignedTo = assignedTo;
         this.assignedToName = assignedToName;
         this.dueDate = dueDate;
+        this.startDate = System.currentTimeMillis();
+        this.subtasks = new ArrayList<>();
+        this.tags = new ArrayList<>();
+        this.githubIssueNumber = 0;
     }
 
     public String getTaskId() { return taskId; }
@@ -98,4 +117,46 @@ public class Task {
 
     public long getStartDate() { return startDate; }
     public void setStartDate(long startDate) { this.startDate = startDate; }
+
+    public List<Subtask> getSubtasks() { return subtasks != null ? subtasks : new ArrayList<>(); }
+    public void setSubtasks(List<Subtask> subtasks) { this.subtasks = subtasks != null ? subtasks : new ArrayList<>(); }
+
+    public String getDependsOnTaskId() { return dependsOnTaskId; }
+    public void setDependsOnTaskId(String dependsOnTaskId) { this.dependsOnTaskId = dependsOnTaskId; }
+
+    public String getDependsOnTaskKey() { return dependsOnTaskKey; }
+    public void setDependsOnTaskKey(String dependsOnTaskKey) { this.dependsOnTaskKey = dependsOnTaskKey; }
+
+    public List<String> getTags() { return tags != null ? tags : new ArrayList<>(); }
+    public void setTags(List<String> tags) { this.tags = tags != null ? tags : new ArrayList<>(); }
+
+    public String getGithubIssueUrl() { return githubIssueUrl; }
+    public void setGithubIssueUrl(String githubIssueUrl) { this.githubIssueUrl = githubIssueUrl; }
+
+    public int getGithubIssueNumber() { return githubIssueNumber; }
+    public void setGithubIssueNumber(int githubIssueNumber) { this.githubIssueNumber = githubIssueNumber; }
+
+    @Exclude
+    public int getCompletedSubtasksCount() {
+        if (subtasks == null) return 0;
+        int count = 0;
+        for (Subtask s : subtasks) {
+            if (s != null && s.isCompleted()) count++;
+        }
+        return count;
+    }
+
+    @Exclude
+    public int getTotalSubtasksCount() {
+        return subtasks != null ? subtasks.size() : 0;
+    }
+
+    @Exclude
+    public boolean areAllSubtasksCompleted() {
+        if (subtasks == null || subtasks.isEmpty()) return false;
+        for (Subtask s : subtasks) {
+            if (s == null || !s.isCompleted()) return false;
+        }
+        return true;
+    }
 }

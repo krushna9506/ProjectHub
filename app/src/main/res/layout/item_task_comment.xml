@@ -14,7 +14,7 @@
         android:layout_height="36dp"
         android:background="@drawable/bg_avatar_circle"
         android:gravity="center"
-        android:textColor="@color/surface"
+        android:textColor="@color/on_primary"
         android:textStyle="bold"
         android:textSize="14sp"
         android:text="U" />

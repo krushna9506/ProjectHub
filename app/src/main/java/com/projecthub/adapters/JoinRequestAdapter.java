@@ -57,13 +57,13 @@ public class JoinRequestAdapter extends RecyclerView.Adapter<JoinRequestAdapter.
         holder.tvRequestStatus.setText(status);
 
         if ("ACCEPTED".equalsIgnoreCase(status)) {
-            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.status_done));
+            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.status_done_text));
             holder.layoutActionButtons.setVisibility(View.GONE);
         } else if ("REJECTED".equalsIgnoreCase(status)) {
-            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.priority_high));
+            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.status_blocked_text));
             holder.layoutActionButtons.setVisibility(View.GONE);
         } else {
-            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.primary));
+            holder.tvRequestStatus.setTextColor(holder.itemView.getContext().getColor(R.color.status_progress_text));
             if (isLeadView) {
                 holder.layoutActionButtons.setVisibility(View.VISIBLE);
                 holder.btnAccept.setOnClickListener(v -> {

@@ -5,13 +5,14 @@
     android:id="@+id/cardTask"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="6dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="5dp"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="1dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
     app:strokeColor="@color/divider"
     app:strokeWidth="1dp">
 
@@ -19,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <!-- Top Row: Issue Type, Priority, and Comment Count -->
         <LinearLayout
@@ -32,9 +33,9 @@
                 android:id="@+id/tvTaskIssueType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:textSize="10sp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textSize="10.5sp"
                 android:textStyle="bold"
                 android:textColor="@color/issue_task"
                 android:background="@drawable/bg_badge_task"
@@ -45,11 +46,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:textSize="10sp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textSize="10.5sp"
                 android:textStyle="bold"
-                android:textColor="@color/surface"
+                android:textColor="@color/on_primary"
                 android:background="@drawable/bg_priority_pill"
                 android:text="MED" />
 
@@ -62,9 +63,9 @@
                 android:id="@+id/tvTaskCommentsCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
+                android:textSize="11.5sp"
                 android:textColor="@color/text_secondary"
-                android:text="💬 0" />
+                android:text="0 replies" />
         </LinearLayout>
 
         <!-- Task Title -->
@@ -90,12 +91,56 @@
             android:ellipsize="end"
             android:text="Task description details..." />
 
+        <!-- Metadata Row: Subtasks, Blocker, Due Date -->
+        <LinearLayout
+            android:id="@+id/layoutTaskMetaChips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvTaskSubtasksBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_status_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textSize="10.5sp"
+                android:textColor="@color/text_primary"
+                android:text="0/0 subtasks"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvTaskBlockerBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_status_blocked"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textSize="10.5sp"
+                android:textColor="@color/status_blocked_text"
+                android:text="Blocked"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvTaskDueDateBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <!-- Divider line -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:background="@color/divider" />
 
         <!-- Bottom Row: Assignee, Status Tag, and Quick Workflow Button -->
@@ -115,7 +160,7 @@
                     android:id="@+id/tvAssignedTo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="12.5sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     android:text="Unassigned" />
@@ -124,10 +169,13 @@
                     android:id="@+id/tvTaskStatusBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textSize="10sp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_status_todo"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textSize="10.5sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textColor="@color/status_todo_text"
                     android:text="● TO DO" />
             </LinearLayout>
 
@@ -135,9 +183,11 @@
                 android:id="@+id/btnStatusToggle"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:textSize="11sp"
-                android:paddingHorizontal="10dp"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:textSize="11.5sp"
+                android:paddingHorizontal="14dp"
+                app:cornerRadius="10dp"
                 android:text="Start" />
         </LinearLayout>
     </LinearLayout>

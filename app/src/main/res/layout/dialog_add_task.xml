@@ -1,196 +1,246 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout 
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:layout_height="wrap_content">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="New Agile Issue / Task"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@color/primary" />
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etTaskTitle"
+        <TextView
+            android:id="@+id/tvDialogTaskHeading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Agile Issue / Task"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary" />
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Issue Title (e.g. Design Login UI)" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="14dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Issue Title (e.g. Design Login UI)" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etTaskDesc"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Description / Acceptance Criteria"
-            android:inputType="textMultiLine"
-            android:minLines="2" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="10dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Description / Acceptance Criteria"
+                android:inputType="textMultiLine"
+                android:minLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etAssignee"
+        <!-- Real Project Member Assignee Picker -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Assign to Project Member"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="12dp" />
+
+        <Spinner
+            android:id="@+id/spinnerAssignee"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Assigned Member Name (or leave unassigned)" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="4dp" />
 
-    <!-- Issue Type Selector -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Issue Type"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_secondary"
-        android:layout_marginTop="14dp" />
-
-    <RadioGroup
-        android:id="@+id/rgIssueType"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="4dp">
-
-        <RadioButton
-            android:id="@+id/rbTypeTask"
+        <!-- Status Picker (supports custom statuses) -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Task"
-            android:checked="true" />
+            android:text="Status"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="10dp" />
 
-        <RadioButton
-            android:id="@+id/rbTypeFeature"
+        <Spinner
+            android:id="@+id/spinnerTaskStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <!-- Task Dependency / Blocker Picker -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Feature"
-            android:layout_marginStart="8dp" />
+            android:text="Depends On / Blocked By"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="10dp" />
 
-        <RadioButton
-            android:id="@+id/rbTypeBug"
+        <Spinner
+            android:id="@+id/spinnerDependsOnTask"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <!-- Due Date Picker Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickTaskDueDate"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="12dp"
+            android:text="Due Date: 7 days from today" />
+
+        <!-- Issue Type Selector -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bug"
-            android:layout_marginStart="8dp" />
+            android:text="Issue Type"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="12dp" />
 
-        <RadioButton
-            android:id="@+id/rbTypeDoc"
+        <RadioGroup
+            android:id="@+id/rgIssueType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <RadioButton
+                android:id="@+id/rbTypeTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Task"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbTypeFeature"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Feature"
+                android:layout_marginStart="6dp" />
+
+            <RadioButton
+                android:id="@+id/rbTypeBug"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bug"
+                android:layout_marginStart="6dp" />
+
+            <RadioButton
+                android:id="@+id/rbTypeDoc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Doc"
+                android:layout_marginStart="6dp" />
+        </RadioGroup>
+
+        <!-- Priority Selector -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Doc"
-            android:layout_marginStart="8dp" />
-    </RadioGroup>
+            android:text="Priority"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="10dp" />
 
-    <!-- Priority Selector -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Priority"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_secondary"
-        android:layout_marginTop="12dp" />
+        <RadioGroup
+            android:id="@+id/rgPriority"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
 
-    <RadioGroup
-        android:id="@+id/rgPriority"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="4dp">
+            <RadioButton
+                android:id="@+id/rbLow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Low" />
 
-        <RadioButton
-            android:id="@+id/rbLow"
+            <RadioButton
+                android:id="@+id/rbMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Medium"
+                android:checked="true"
+                android:layout_marginStart="6dp" />
+
+            <RadioButton
+                android:id="@+id/rbHigh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="High"
+                android:layout_marginStart="6dp" />
+
+            <RadioButton
+                android:id="@+id/rbUrgent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Urgent"
+                android:layout_marginStart="6dp" />
+        </RadioGroup>
+
+        <!-- Zoho Projects Phase Selector -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Low" />
+            android:text="Project Phase (Gantt Schedule)"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="10dp" />
 
-        <RadioButton
-            android:id="@+id/rbMedium"
-            android:layout_width="wrap_content"
+        <RadioGroup
+            android:id="@+id/rgPhase"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Medium"
-            android:checked="true"
-            android:layout_marginStart="8dp" />
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
 
-        <RadioButton
-            android:id="@+id/rbHigh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="High"
-            android:layout_marginStart="8dp" />
+            <RadioButton
+                android:id="@+id/rbPhasePlanning"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Planning" />
 
-        <RadioButton
-            android:id="@+id/rbUrgent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Urgent"
-            android:layout_marginStart="8dp" />
-    </RadioGroup>
+            <RadioButton
+                android:id="@+id/rbPhaseDesign"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Design"
+                android:layout_marginStart="4dp" />
 
-    <!-- Zoho Projects Phase Selector -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Project Phase (Gantt Schedule)"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_secondary"
-        android:layout_marginTop="12dp" />
+            <RadioButton
+                android:id="@+id/rbPhaseDev"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dev"
+                android:checked="true"
+                android:layout_marginStart="4dp" />
 
-    <RadioGroup
-        android:id="@+id/rgPhase"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="4dp">
+            <RadioButton
+                android:id="@+id/rbPhaseReview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Review"
+                android:layout_marginStart="4dp" />
+        </RadioGroup>
 
-        <RadioButton
-            android:id="@+id/rbPhasePlanning"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Planning" />
-
-        <RadioButton
-            android:id="@+id/rbPhaseDesign"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Design"
-            android:layout_marginStart="6dp" />
-
-        <RadioButton
-            android:id="@+id/rbPhaseDev"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Dev"
-            android:checked="true"
-            android:layout_marginStart="6dp" />
-
-        <RadioButton
-            android:id="@+id/rbPhaseReview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Review"
-            android:layout_marginStart="6dp" />
-    </RadioGroup>
-
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

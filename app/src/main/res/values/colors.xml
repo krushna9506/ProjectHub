@@ -1,53 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Modern Tech Brand Colors -->
-    <color name="primary">#2563EB</color>
-    <color name="primary_dark">#1D4ED8</color>
-    <color name="primary_light">#EFF6FF</color>
-    <color name="accent">#0D9488</color>
-    <color name="accent_light">#F0FDFA</color>
+    <!-- ProjectHub Brand & Accent (Indigo Slate + Emerald) -->
+    <color name="primary">#4F46E5</color>
+    <color name="primary_dark">#3730A3</color>
+    <color name="primary_light">#EEF2FF</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_primary_container">#312E81</color>
 
-    <!-- Surfaces & Backgrounds -->
-    <color name="background">#F8FAFC</color>
+    <color name="accent">#059669</color>
+    <color name="accent_light">#ECFDF5</color>
+    <color name="on_accent">#FFFFFF</color>
+    <color name="on_accent_container">#065F46</color>
+
+    <!-- Surfaces, Canvas & Borders -->
+    <color name="background">#F6F7FB</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F1F5F9</color>
-    <color name="text_primary">#0F172A</color>
-    <color name="text_secondary">#64748B</color>
+    <color name="surface_variant">#EEF0F8</color>
+    <color name="surface_elevated">#FFFFFF</color>
     <color name="divider">#E2E8F0</color>
+    <color name="chat_received_bg">#F1F5F9</color>
+    <color name="code_surface">#0F172A</color>
+    <color name="code_text">#E2E8F0</color>
 
-    <!-- Priority Colors -->
+    <!-- Typography -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_tertiary">#64748B</color>
+
+    <!-- Priority Tokens -->
     <color name="priority_urgent">#DC2626</color>
-    <color name="priority_high">#EA580C</color>
-    <color name="priority_medium">#D97706</color>
-    <color name="priority_low">#16A34A</color>
+    <color name="priority_high">#D97706</color>
+    <color name="priority_medium">#4F46E5</color>
+    <color name="priority_low">#059669</color>
 
-    <!-- Status Colors -->
+    <!-- Workflow Status Tokens -->
     <color name="status_todo">#64748B</color>
     <color name="status_todo_bg">#F1F5F9</color>
-    <color name="status_progress">#2563EB</color>
-    <color name="status_progress_bg">#EFF6FF</color>
-    <color name="status_review">#9333EA</color>
-    <color name="status_review_bg">#FAF5FF</color>
-    <color name="status_done">#16A34A</color>
-    <color name="status_done_bg">#F0FDF4</color>
+    <color name="status_todo_text">#334155</color>
 
-    <!-- Jira Issue Type Colors -->
+    <color name="status_progress">#F59E0B</color>
+    <color name="status_progress_bg">#FEF3C7</color>
+    <color name="status_progress_text">#92400E</color>
+
+    <color name="status_review">#0EA5E9</color>
+    <color name="status_review_bg">#E0F2FE</color>
+    <color name="status_review_text">#075985</color>
+
+    <color name="status_done">#10B981</color>
+    <color name="status_done_bg">#D1FAE5</color>
+    <color name="status_done_text">#065F46</color>
+
+    <color name="status_blocked">#EF4444</color>
+    <color name="status_blocked_bg">#FEE2E2</color>
+    <color name="status_blocked_text">#991B1B</color>
+
+    <!-- Issue Type Tokens -->
     <color name="issue_bug">#DC2626</color>
     <color name="issue_bug_bg">#FEF2F2</color>
     <color name="issue_feature">#7C3AED</color>
     <color name="issue_feature_bg">#F5F3FF</color>
-    <color name="issue_task">#2563EB</color>
-    <color name="issue_task_bg">#EFF6FF</color>
-    <color name="issue_doc">#0D9488</color>
-    <color name="issue_doc_bg">#F0FDFA</color>
+    <color name="issue_task">#4F46E5</color>
+    <color name="issue_task_bg">#EEF2FF</color>
+    <color name="issue_doc">#059669</color>
+    <color name="issue_doc_bg">#ECFDF5</color>
 
-    <!-- Zoho Projects Phase Colors -->
-    <color name="phase_planning">#8B5CF6</color>
+    <!-- Phase Tokens -->
+    <color name="phase_planning">#7C3AED</color>
     <color name="phase_planning_bg">#F5F3FF</color>
-    <color name="phase_design">#EA580C</color>
-    <color name="phase_design_bg">#FFF7ED</color>
-    <color name="phase_dev">#10B981</color>
+    <color name="phase_design">#D97706</color>
+    <color name="phase_design_bg">#FFFBEB</color>
+    <color name="phase_dev">#059669</color>
     <color name="phase_dev_bg">#ECFDF5</color>
-    <color name="phase_review">#2563EB</color>
-    <color name="phase_review_bg">#EFF6FF</color>
+    <color name="phase_review">#4F46E5</color>
+    <color name="phase_review_bg">#EEF2FF</color>
 </resources>

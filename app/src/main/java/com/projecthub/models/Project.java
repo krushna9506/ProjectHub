@@ -1,7 +1,12 @@
 package com.projecthub.models;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Project {
@@ -23,9 +28,15 @@ public class Project {
     private String venueLocation;
     private double latitude;
     private double longitude;
+    private List<String> customStatuses;
+    private String templateType; // "BLANK", "CAPSTONE", "HACKATHON", "RESEARCH"
+    private String mentorId;
+    private String mentorName;
 
     public Project() {
         this.members = new HashMap<>();
+        this.customStatuses = defaultStatuses();
+        this.templateType = "BLANK";
     }
 
     public Project(String projectId, String title, String description, String joinCode, 
@@ -49,6 +60,23 @@ public class Project {
         this.venueLocation = "";
         this.latitude = 0.0;
         this.longitude = 0.0;
+        this.customStatuses = defaultStatuses();
+        this.templateType = "BLANK";
+        this.mentorId = "";
+        this.mentorName = "";
+    }
+
+    @Exclude
+    public static List<String> defaultStatuses() {
+        return new ArrayList<>(Arrays.asList("TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"));
+    }
+
+    @Exclude
+    public List<String> getEffectiveStatuses() {
+        if (customStatuses == null || customStatuses.isEmpty()) {
+            return defaultStatuses();
+        }
+        return customStatuses;
     }
 
     public String getProjectId() { return projectId; }
@@ -111,4 +139,16 @@ public class Project {
 
     public double getLongitude() { return longitude; }
     public void setLongitude(double longitude) { this.longitude = longitude; }
+
+    public List<String> getCustomStatuses() { return customStatuses; }
+    public void setCustomStatuses(List<String> customStatuses) { this.customStatuses = customStatuses; }
+
+    public String getTemplateType() { return templateType != null ? templateType : "BLANK"; }
+    public void setTemplateType(String templateType) { this.templateType = templateType; }
+
+    public String getMentorId() { return mentorId; }
+    public void setMentorId(String mentorId) { this.mentorId = mentorId; }
+
+    public String getMentorName() { return mentorName; }
+    public void setMentorName(String mentorName) { this.mentorName = mentorName; }
 }

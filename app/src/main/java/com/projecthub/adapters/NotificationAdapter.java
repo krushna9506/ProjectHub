@@ -66,31 +66,52 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         String type = notification.getType() != null ? notification.getType() : "DEFAULT";
         switch (type) {
             case "JOIN_REQUEST":
-                holder.tvIcon.setText("🤝");
+                holder.tvIcon.setText("JR");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.accent));
                 break;
             case "JOIN_ACCEPTED":
-                holder.tvIcon.setText("🎉");
+                holder.tvIcon.setText("OK");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.status_done));
                 break;
             case "JOIN_REJECTED":
-                holder.tvIcon.setText("ℹ️");
+                holder.tvIcon.setText("--");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.text_secondary));
                 break;
             case "TASK":
-                holder.tvIcon.setText("📋");
+            case "TASK_ASSIGNED":
+                holder.tvIcon.setText("T");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.primary));
                 break;
+            case "MENTION":
+                holder.tvIcon.setText("@");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.issue_feature));
+                break;
+            case "COMMENT":
+                holder.tvIcon.setText("C");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.accent));
+                break;
+            case "DEADLINE":
+                holder.tvIcon.setText("!");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.priority_high));
+                break;
+            case "TEAM_INVITE":
+                holder.tvIcon.setText("IN");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.status_done));
+                break;
+            case "AUTOMATION":
+                holder.tvIcon.setText("AU");
+                holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.phase_planning));
+                break;
             case "CHAT":
-                holder.tvIcon.setText("💬");
+                holder.tvIcon.setText("M");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.issue_feature));
                 break;
             case "CALL":
-                holder.tvIcon.setText("📹");
+                holder.tvIcon.setText("VC");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.priority_urgent));
                 break;
             default:
-                holder.tvIcon.setText("🔔");
+                holder.tvIcon.setText("N");
                 holder.tvIcon.getBackground().mutate().setTint(ContextCompat.getColor(context, R.color.primary));
                 break;
         }

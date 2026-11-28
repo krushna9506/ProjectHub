@@ -48,16 +48,16 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
         Project project = projectList.get(position);
 
         holder.tvProjectTitle.setText(project.getTitle() != null ? project.getTitle() : "Untitled");
-        holder.tvLeadName.setText("👤 Lead: " + (project.getLeadName() != null ? project.getLeadName() : "Team Lead"));
+        String leadText = "Lead: " + (project.getLeadName() != null ? project.getLeadName() : "Team Lead");
+        if (project.getMentorName() != null && !project.getMentorName().isEmpty()) {
+            leadText += " • Mentor: " + project.getMentorName();
+        }
+        holder.tvLeadName.setText(leadText);
         holder.tvProjectDesc.setText(project.getDescription() != null ? project.getDescription() : "");
         holder.tvCategory.setText(project.getCategory() != null ? project.getCategory().toUpperCase() : "GENERAL");
 
-        if (project.getJoinCode() != null && !project.getJoinCode().isEmpty()) {
-            holder.tvJoinCodeBadge.setVisibility(View.VISIBLE);
-            holder.tvJoinCodeBadge.setText("Code: " + project.getJoinCode());
-        } else {
-            holder.tvJoinCodeBadge.setVisibility(View.GONE);
-        }
+        // Do not leak private join codes on public listings; users request to join or use an invite code directly
+        holder.tvJoinCodeBadge.setVisibility(View.GONE);
 
         if (project.getLookingFor() != null && !project.getLookingFor().isEmpty()) {
             holder.layoutLookingFor.setVisibility(View.VISIBLE);
@@ -82,10 +82,7 @@ public class ExploreAdapter extends RecyclerView.Adapter<ExploreAdapter.ExploreV
         } else {
             holder.layoutActionsRow.setVisibility(View.VISIBLE);
             holder.btnAlreadyMember.setVisibility(View.GONE);
-
-            holder.btnQuickJoin.setOnClickListener(v -> {
-                if (listener != null) listener.onJoinDirectly(project);
-            });
+            holder.btnQuickJoin.setVisibility(View.GONE);
 
             holder.btnRequestJoin.setOnClickListener(v -> {
                 if (listener != null) listener.onRequestJoin(project);

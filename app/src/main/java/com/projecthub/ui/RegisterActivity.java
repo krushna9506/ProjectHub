@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,10 +16,14 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.projecthub.R;
 import com.projecthub.viewmodel.AuthViewModel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RegisterActivity extends AppCompatActivity {
 
     private AuthViewModel authViewModel;
-    private TextInputEditText etName, etEmail, etDepartment, etRollNumber, etPassword;
+    private TextInputEditText etName, etEmail, etDepartment, etRollNumber, etPassword, etSkills;
+    private RadioGroup rgRole;
     private MaterialButton btnRegister;
     private ProgressBar progressBar;
     private TextView tvGoToLogin;
@@ -33,6 +38,8 @@ public class RegisterActivity extends AppCompatActivity {
         etDepartment = findViewById(R.id.etDepartment);
         etRollNumber = findViewById(R.id.etRollNumber);
         etPassword = findViewById(R.id.etPassword);
+        etSkills = findViewById(R.id.etSkills);
+        rgRole = findViewById(R.id.rgRole);
         btnRegister = findViewById(R.id.btnRegister);
         progressBar = findViewById(R.id.progressBar);
         tvGoToLogin = findViewById(R.id.tvGoToLogin);
@@ -41,7 +48,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         authViewModel.getCurrentUser().observe(this, user -> {
             if (user != null) {
-                Toast.makeText(RegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RegisterActivity.this, "Registration Successful! Verification email sent.", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -66,9 +73,10 @@ public class RegisterActivity extends AppCompatActivity {
             String dept = etDepartment.getText() != null ? etDepartment.getText().toString().trim() : "";
             String roll = etRollNumber.getText() != null ? etRollNumber.getText().toString().trim() : "";
             String pass = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
+            String skillsStr = etSkills != null && etSkills.getText() != null ? etSkills.getText().toString().trim() : "";
 
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || dept.isEmpty() || roll.isEmpty()) {
-                Toast.makeText(this, "Please complete all fields", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please complete all required fields", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -77,7 +85,18 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
 
-            authViewModel.register(email, pass, name, dept, roll);
+            String role = (rgRole != null && rgRole.getCheckedRadioButtonId() == R.id.rbRoleFaculty)
+                    ? "FACULTY_MENTOR" : "STUDENT";
+
+            List<String> skills = new ArrayList<>();
+            if (!skillsStr.isEmpty()) {
+                for (String s : skillsStr.split(",")) {
+                    String trimmed = s.trim();
+                    if (!trimmed.isEmpty()) skills.add(trimmed);
+                }
+            }
+
+            authViewModel.register(email, pass, name, dept, roll, role, skills);
         });
 
         tvGoToLogin.setOnClickListener(v -> finish());

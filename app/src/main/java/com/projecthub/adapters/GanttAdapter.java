@@ -70,38 +70,49 @@ public class GanttAdapter extends RecyclerView.Adapter<GanttAdapter.GanttViewHol
         holder.tvPhase.setTextColor(phaseColor);
 
         holder.tvTaskName.setText(task.getTitle());
-        holder.tvAssignee.setText("👤 " + (task.getAssignedToName() != null && !task.getAssignedToName().isEmpty() ? 
+        holder.tvAssignee.setText((task.getAssignedToName() != null && !task.getAssignedToName().isEmpty() ? 
             task.getAssignedToName() : "Unassigned"));
 
         double time = task.getTimeSpentHours();
-        holder.tvTimeSpent.setText(String.format(Locale.US, "⏱️ %.1fh", time));
+        holder.tvTimeSpent.setText(String.format(Locale.US, "%.1fh", time));
 
         String status = task.getStatus() != null ? task.getStatus().toUpperCase(Locale.getDefault()) : "TODO";
         int progress;
         int barColor;
+        int statusTextColor;
         String statusLabel;
 
         if ("DONE".equals(status)) {
             progress = 100;
             barColor = ContextCompat.getColor(context, R.color.status_done);
+            statusTextColor = ContextCompat.getColor(context, R.color.status_done_text);
             statusLabel = "DONE (100%)";
         } else if ("IN_REVIEW".equals(status)) {
             progress = 80;
             barColor = ContextCompat.getColor(context, R.color.status_review);
+            statusTextColor = ContextCompat.getColor(context, R.color.status_review_text);
             statusLabel = "REVIEW (80%)";
         } else if ("IN_PROGRESS".equals(status)) {
             progress = 55;
-            barColor = phaseColor;
+            barColor = ContextCompat.getColor(context, R.color.status_progress);
+            statusTextColor = ContextCompat.getColor(context, R.color.status_progress_text);
             statusLabel = "IN PROGRESS (55%)";
+        } else if ("BLOCKED".equals(status)) {
+            progress = 25;
+            barColor = ContextCompat.getColor(context, R.color.status_blocked);
+            statusTextColor = ContextCompat.getColor(context, R.color.status_blocked_text);
+            statusLabel = "BLOCKED";
         } else {
             progress = 15;
             barColor = ContextCompat.getColor(context, R.color.status_todo);
+            statusTextColor = ContextCompat.getColor(context, R.color.status_todo_text);
             statusLabel = "TO DO (15%)";
         }
 
         holder.pbTimeline.setProgress(progress);
         holder.pbTimeline.setProgressTintList(ColorStateList.valueOf(barColor));
         holder.tvStatus.setText(statusLabel);
+        holder.tvStatus.setTextColor(statusTextColor);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onTaskClick(task);

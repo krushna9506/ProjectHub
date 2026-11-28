@@ -9,11 +9,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.projecthub.R;
 import com.projecthub.models.Project;
+import com.projecthub.models.User;
+import com.projecthub.utils.ProjectTemplates;
+import com.projecthub.viewmodel.AuthViewModel;
 import com.projecthub.viewmodel.DashboardViewModel;
 
 import java.util.Random;
@@ -21,10 +26,15 @@ import java.util.Random;
 public class CreateProjectActivity extends AppCompatActivity {
 
     private DashboardViewModel dashboardViewModel;
+    private AuthViewModel authViewModel;
     private TextInputEditText etTitle, etDesc, etDeadlineDays, etCategory, etLookingFor;
+    private ChipGroup chipGroupTemplates;
     private MaterialSwitch switchPublic;
     private MaterialButton btnSubmitCreate;
     private ProgressBar progressBar;
+
+    private String selectedTemplate = ProjectTemplates.TEMPLATE_BLANK;
+    private User currentUserProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +46,37 @@ public class CreateProjectActivity extends AppCompatActivity {
         etDeadlineDays = findViewById(R.id.etDeadlineDays);
         etCategory = findViewById(R.id.etCategory);
         etLookingFor = findViewById(R.id.etLookingFor);
+        chipGroupTemplates = findViewById(R.id.chipGroupTemplates);
         switchPublic = findViewById(R.id.switchPublic);
         btnSubmitCreate = findViewById(R.id.btnSubmitCreate);
         progressBar = findViewById(R.id.progressBar);
 
         dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
+        authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
+        authViewModel.fetchCurrentUserProfile();
+        authViewModel.getCurrentUser().observe(this, user -> currentUserProfile = user);
+
+        if (chipGroupTemplates != null) {
+            chipGroupTemplates.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (checkedIds.isEmpty()) return;
+                int id = checkedIds.get(0);
+                if (id == R.id.chipTemplateCapstone) {
+                    selectedTemplate = ProjectTemplates.TEMPLATE_CAPSTONE;
+                } else if (id == R.id.chipTemplateHackathon) {
+                    selectedTemplate = ProjectTemplates.TEMPLATE_HACKATHON;
+                } else if (id == R.id.chipTemplateResearch) {
+                    selectedTemplate = ProjectTemplates.TEMPLATE_RESEARCH;
+                } else {
+                    selectedTemplate = ProjectTemplates.TEMPLATE_BLANK;
+                }
+                ProjectTemplates.TemplateSpec spec = ProjectTemplates.getTemplate(selectedTemplate);
+                etCategory.setText(spec.category);
+                etDeadlineDays.setText(String.valueOf(spec.defaultDays));
+                if (!spec.lookingFor.isEmpty()) {
+                    etLookingFor.setText(spec.lookingFor);
+                }
+            });
+        }
 
         dashboardViewModel.getIsLoading().observe(this, isLoading -> {
             progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
@@ -76,25 +112,29 @@ public class CreateProjectActivity extends AppCompatActivity {
 
             long deadline = System.currentTimeMillis() + ((long) days * 24 * 60 * 60 * 1000L);
             String joinCode = generateJoinCode(6);
-            String leadId = FirebaseAuth.getInstance().getCurrentUser() != null ? 
-                            FirebaseAuth.getInstance().getCurrentUser().getUid() : "unknown";
-            String leadName = FirebaseAuth.getInstance().getCurrentUser() != null && 
-                              FirebaseAuth.getInstance().getCurrentUser().getDisplayName() != null ?
-                              FirebaseAuth.getInstance().getCurrentUser().getDisplayName() : "Lead";
+            FirebaseUser fbUser = FirebaseAuth.getInstance().getCurrentUser();
+            String leadId = fbUser != null ? fbUser.getUid() : "unknown";
+            String leadName = "Team Lead";
+            if (currentUserProfile != null && currentUserProfile.getName() != null && !currentUserProfile.getName().isEmpty()) {
+                leadName = currentUserProfile.getName();
+            } else if (fbUser != null && fbUser.getDisplayName() != null && !fbUser.getDisplayName().isEmpty()) {
+                leadName = fbUser.getDisplayName();
+            } else if (fbUser != null && fbUser.getEmail() != null && fbUser.getEmail().contains("@")) {
+                leadName = fbUser.getEmail().split("@")[0];
+            }
 
             Project project = new Project(null, title, desc, joinCode, leadId, leadName, deadline);
             project.setPublic(isPublic);
             project.setCategory(category.isEmpty() ? "General" : category);
             project.setLookingFor(lookingFor);
+            project.setTemplateType(selectedTemplate);
 
-            String userEmail = FirebaseAuth.getInstance().getCurrentUser() != null && 
-                               FirebaseAuth.getInstance().getCurrentUser().getEmail() != null ?
-                               FirebaseAuth.getInstance().getCurrentUser().getEmail() : "";
+            String userEmail = fbUser != null && fbUser.getEmail() != null ? fbUser.getEmail() : "";
             if (userEmail.contains("@")) {
                 project.setCollegeDomain(userEmail.substring(userEmail.indexOf("@") + 1));
             }
 
-            dashboardViewModel.createProject(project);
+            dashboardViewModel.createProjectWithTemplate(project, selectedTemplate);
         });
     }
 

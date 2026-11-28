@@ -67,19 +67,19 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         holder.tvJoinCode.setText(project.getJoinCode() != null ? project.getJoinCode() : "");
 
         int memberCount = project.getMembers() != null ? project.getMembers().size() : 1;
-        holder.tvMembersCount.setText("👥 " + memberCount + (memberCount == 1 ? " member" : " members"));
+        holder.tvMembersCount.setText(memberCount + (memberCount == 1 ? " member" : " members"));
 
         long deadline = project.getDeadline();
         if (deadline > 0) {
             long diff = deadline - System.currentTimeMillis();
             if (diff > 0) {
                 long days = diff / (1000 * 60 * 60 * 24);
-                holder.tvDeadline.setText("⏳ " + days + "d remaining");
+                holder.tvDeadline.setText("• " + days + "d left");
             } else {
-                holder.tvDeadline.setText("⚠️ Deadline passed");
+                holder.tvDeadline.setText("• Deadline passed");
             }
         } else {
-            holder.tvDeadline.setText("⚡ Active workspace");
+            holder.tvDeadline.setText("• Active workspace");
         }
 
         int progress = project.getProgressPercentage();

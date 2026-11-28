@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -9,103 +9,126 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface">
+        android:background="@color/surface"
+        app:elevation="0dp">
 
+        <!-- Collapsible Project Header & Tools -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="6dp">
+            android:paddingHorizontal="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            app:layout_scrollFlags="scroll|enterAlways">
 
-            <RelativeLayout
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageButton
+                    android:id="@+id/btnProjectBack"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_back"
+                    android:padding="10dp"
+                    android:contentDescription="Back" />
 
                 <TextView
                     android:id="@+id/tvProjectTitle"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_toStartOf="@+id/layoutTopActions"
-                    android:textSize="21sp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:textSize="19sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textColor="@color/text_primary"
+                    android:text="Project" />
 
-                <LinearLayout
-                    android:id="@+id/layoutTopActions"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLiveCall"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Meet"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="10dp"
+                    app:icon="@drawable/ic_video"
+                    app:iconSize="16dp"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="10dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLiveCall"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="📹 Meet"
-                        android:textSize="11sp"
-                        android:paddingHorizontal="8dp"
-                        android:layout_marginEnd="6dp" />
-
-                    <TextView
-                        android:id="@+id/tvProjectJoinCode"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_code_pill"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary" />
-                </LinearLayout>
-            </RelativeLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShareProject"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Share"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="10dp"
+                    app:strokeColor="@color/divider"
+                    app:icon="@drawable/ic_share"
+                    app:iconSize="15dp"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvProjectDesc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="4dp"
+                android:maxLines="2"
+                android:ellipsize="end"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <!-- Location Tag & Native Share Row -->
+            <!-- Join Code & Venue Pill Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
+                android:paddingHorizontal="4dp"
                 android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvProjectJoinCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_code_pill"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="5dp"
+                    android:fontFamily="monospace"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/on_primary_container"
+                    android:text="CODE" />
 
                 <TextView
                     android:id="@+id/tvProjectLocation"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_category_pill"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="5dp"
                     android:textSize="11.5sp"
-                    android:textColor="@color/text_primary"
+                    android:textColor="@color/text_secondary"
                     android:maxLines="1"
                     android:ellipsize="end"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?android:attr/selectableItemBackground"
-                    android:text="📍 Set Campus / Lab Venue" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnShareProject"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="8dp"
-                    android:text="↗ Share"
-                    android:textSize="11sp"
-                    android:paddingHorizontal="8dp" />
+                    android:text="Set campus venue" />
             </LinearLayout>
 
             <!-- Progress Tracker -->
@@ -114,16 +137,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="10dp"
+                android:paddingHorizontal="4dp"
                 android:gravity="center_vertical">
 
                 <ProgressBar
                     android:id="@+id/pbOverallProgress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="0dp"
-                    android:layout_height="8dp"
+                    android:layout_height="7dp"
                     android:layout_weight="1"
                     android:max="100"
-                    android:progressTint="@color/primary" />
+                    android:progressDrawable="@drawable/bg_progress_rounded" />
 
                 <TextView
                     android:id="@+id/tvOverallProgress"
@@ -134,15 +158,82 @@
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
             </LinearLayout>
+
+            <!-- Workspace Tools Row -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginTop="8dp"
+                android:paddingHorizontal="4dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTeamDirectory"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="6dp"
+                        android:text="Team (1)"
+                        android:textSize="11.5sp"
+                        android:paddingHorizontal="10dp"
+                        app:strokeColor="@color/divider"
+                        app:icon="@drawable/ic_group"
+                        app:iconSize="15dp"
+                        app:iconPadding="4dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAutomations"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="6dp"
+                        android:text="Automations"
+                        android:textSize="11.5sp"
+                        android:paddingHorizontal="10dp"
+                        app:strokeColor="@color/divider"
+                        app:icon="@drawable/ic_bolt"
+                        app:iconSize="15dp"
+                        app:iconPadding="4dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCustomStatuses"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Statuses"
+                        android:textSize="11.5sp"
+                        android:paddingHorizontal="10dp"
+                        app:strokeColor="@color/divider"
+                        app:icon="@drawable/ic_tune"
+                        app:iconSize="15dp"
+                        app:iconPadding="4dp"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+            </HorizontalScrollView>
         </LinearLayout>
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/surface"
             app:tabMode="scrollable"
             app:tabSelectedTextColor="@color/primary"
-            app:tabIndicatorColor="@color/primary" />
+            app:tabTextColor="@color/text_secondary"
+            app:tabIndicatorColor="@color/primary"
+            app:tabIndicatorFullWidth="false" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <FrameLayout
@@ -150,19 +241,104 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- Tab 0: Kanban Board View with Filters -->
+        <!-- Tab 0: Tasks & Kanban Board -->
         <LinearLayout
             android:id="@+id/layoutKanban"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- Filter Chips Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="10dp"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="10dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_search"
+                            android:contentDescription="Search tasks" />
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etTaskSearch"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="Search tasks, key, assignee..."
+                            android:paddingHorizontal="8dp"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_secondary"
+                            android:maxLines="1" />
+
+                        <ImageButton
+                            android:id="@+id/btnClearTaskSearch"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_close"
+                            android:padding="4dp"
+                            android:visibility="gone"
+                            android:contentDescription="Clear search" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterPriority"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:text="Pri: ALL"
+                    android:textSize="11.5sp"
+                    android:paddingHorizontal="10dp"
+                    app:icon="@drawable/ic_filter"
+                    app:iconSize="15dp"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleTaskView"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:text="Board"
+                    android:textSize="11.5sp"
+                    android:paddingHorizontal="10dp"
+                    app:strokeColor="@color/divider"
+                    app:icon="@drawable/ic_view_kanban"
+                    app:iconSize="15dp"
+                    app:iconPadding="4dp"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
-                android:paddingHorizontal="12dp"
+                android:paddingHorizontal="16dp"
                 android:paddingVertical="4dp">
 
                 <com.google.android.material.chip.ChipGroup
@@ -177,7 +353,7 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="All Tasks"
+                        android:text="All"
                         android:checked="true" />
 
                     <com.google.android.material.chip.Chip
@@ -220,7 +396,7 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐞 Bugs" />
+                        android:text="Bugs" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
@@ -230,7 +406,22 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:paddingVertical="4dp"
-                android:paddingBottom="80dp" />
+                android:paddingBottom="84dp" />
+
+            <HorizontalScrollView
+                android:id="@+id/hsvBoardColumns"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="80dp">
+
+                <LinearLayout
+                    android:id="@+id/layoutBoardColumns"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
         </LinearLayout>
 
         <!-- Tab 1: Team Chat View -->
@@ -241,14 +432,14 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Chat Call Action Banner -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginBottom="4dp"
-                app:cardCornerRadius="8dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
                 app:strokeColor="@color/divider"
                 app:strokeWidth="1dp">
 
@@ -256,7 +447,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="10dp"
+                    android:padding="12dp"
                     android:gravity="center_vertical"
                     android:background="@color/primary_light">
 
@@ -264,19 +455,23 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="💬 Team Chat Room • Collaborate in real-time"
-                        android:textColor="@color/primary_dark"
-                        android:textSize="12sp"
+                        android:text="Team Chat Room • Real-time sync"
+                        android:textColor="@color/on_primary_container"
+                        android:textSize="12.5sp"
                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnShareCallInChat"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:text="📞 Start Call"
-                        android:textSize="11sp"
-                        android:paddingHorizontal="8dp" />
+                        android:layout_height="34dp"
+                        android:text="Start Call"
+                        android:textSize="11.5sp"
+                        android:paddingHorizontal="10dp"
+                        app:icon="@drawable/ic_video"
+                        app:iconSize="15dp"
+                        app:iconPadding="4dp"
+                        app:cornerRadius="10dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -288,47 +483,89 @@
                 android:clipToPadding="false"
                 android:paddingVertical="8dp" />
 
-            <!-- Sticky Chat Input Bar -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Reply Preview Banner -->
+            <LinearLayout
+                android:id="@+id/layoutReplyPreview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="6dp"
-                app:cardCornerRadius="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="8dp"
+                android:background="@color/primary_light"
+                android:visibility="gone">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/tvReplyPreviewText"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="8dp"
-                    android:gravity="center_vertical"
-                    android:background="@color/surface">
+                    android:layout_weight="1"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_primary_container"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="Replying to..." />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etChatMessageInput"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@null"
-                        android:hint="Type a message to team..."
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="8dp"
-                        android:textSize="14sp"
-                        android:maxLines="3" />
+                <ImageButton
+                    android:id="@+id/btnCancelReply"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_close"
+                    android:padding="6dp"
+                    android:contentDescription="Cancel reply" />
+            </LinearLayout>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSendChatMessage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="Send"
-                        android:textSize="12sp"
-                        app:cornerRadius="20dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider" />
+
+            <!-- Sticky Chat Input Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical"
+                android:background="@color/surface">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMentionPicker"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:minWidth="0dp"
+                    android:padding="0dp"
+                    android:text="\@"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etChatMessageInput"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="Message team (use \@name to mention)..."
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="8dp"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:maxLines="3" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSendChatMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Send"
+                    android:textSize="12.5sp"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Tab 2: Roadmap, Gantt Chart & Sprints View -->
+        <!-- Tab 2: Roadmap, Gantt Chart, Milestones & Calendar -->
         <LinearLayout
             android:id="@+id/layoutRoadmap"
             android:layout_width="match_parent"
@@ -336,13 +573,12 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- View Mode Switcher: Gantt vs Milestones -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp">
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupRoadmapMode"
@@ -356,7 +592,7 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📊 Gantt Timeline Chart"
+                        android:text="Gantt Timeline"
                         android:checked="true" />
 
                     <com.google.android.material.chip.Chip
@@ -364,11 +600,18 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🏁 Sprints &amp; Milestones" />
+                        android:text="Milestones" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipModeCalendar"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Calendar" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
-            <!-- Gantt Chart Section (Zoho Projects Style) -->
+            <!-- Gantt Section -->
             <LinearLayout
                 android:id="@+id/layoutGanttSection"
                 android:layout_width="match_parent"
@@ -380,14 +623,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
-                    android:paddingVertical="6dp"
+                    android:paddingVertical="8dp"
                     android:gravity="center_vertical"
-                    android:background="@color/surface">
+                    android:background="@color/surface_variant">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="TASK ID &amp; PHASE"
+                        android:text="TASK &amp; PHASE"
                         android:textSize="11sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_secondary" />
@@ -400,7 +643,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SCHEDULE PROGRESS"
+                        android:text="TIMELINE PROGRESS"
                         android:textSize="11sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary" />
@@ -411,11 +654,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:clipToPadding="false"
-                    android:paddingVertical="4dp"
-                    android:paddingBottom="80dp" />
+                    android:paddingVertical="6dp"
+                    android:paddingBottom="84dp" />
             </LinearLayout>
 
-            <!-- Milestones List Section -->
+            <!-- Milestones Section -->
             <LinearLayout
                 android:id="@+id/layoutMilestonesSection"
                 android:layout_width="match_parent"
@@ -423,16 +666,15 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Sprint / Hackathon Countdown Widget Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardSprintCountdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="12dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
                     app:strokeColor="@color/divider"
                     app:strokeWidth="1dp">
 
@@ -456,9 +698,9 @@
                                 android:background="@drawable/bg_badge_task"
                                 android:paddingHorizontal="8dp"
                                 android:paddingVertical="3dp"
-                                android:text="SIH SPRINT ROADMAP"
-                                android:textColor="@color/primary_dark"
-                                android:textSize="11sp"
+                                android:text="SPRINT ROADMAP"
+                                android:textColor="@color/on_primary_container"
+                                android:textSize="10.5sp"
                                 android:textStyle="bold" />
 
                             <View
@@ -470,9 +712,9 @@
                                 android:id="@+id/tvCountdownDays"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="⏳ 12 Days Left"
-                                android:textColor="@color/primary_dark"
-                                android:textSize="14sp"
+                                android:text="Active Sprint"
+                                android:textColor="@color/on_primary_container"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
@@ -481,7 +723,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:text="Sprint Target: Dec 15, 2026"
+                            android:text="Sprint Target"
                             android:textColor="@color/text_primary"
                             android:textSize="13sp" />
 
@@ -489,16 +731,16 @@
                             android:id="@+id/pbMilestonesRoadmap"
                             style="?android:attr/progressBarStyleHorizontal"
                             android:layout_width="match_parent"
-                            android:layout_height="8dp"
+                            android:layout_height="7dp"
                             android:layout_marginTop="10dp"
                             android:max="100"
-                            android:progressTint="@color/status_done" />
+                            android:progressDrawable="@drawable/bg_progress_rounded" />
 
                         <TextView
                             android:id="@+id/tvMilestonesRatio"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="6dp"
                             android:text="0 of 0 Milestones Reached"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
@@ -511,21 +753,246 @@
                     android:layout_height="match_parent"
                     android:clipToPadding="false"
                     android:paddingVertical="4dp"
-                    android:paddingBottom="80dp" />
+                    android:paddingBottom="84dp" />
+            </LinearLayout>
+
+            <!-- Calendar Section -->
+            <LinearLayout
+                android:id="@+id/layoutCalendarSection"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <CalendarView
+                    android:id="@+id/calendarView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/surface" />
+
+                <TextView
+                    android:id="@+id/tvCalendarSelectedLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:text="Schedule for selected date"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:background="@color/surface_variant" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCalendarEvents"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingVertical="6dp"
+                    android:paddingBottom="84dp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Tab 3: Files & Code Snippets View -->
+        <!-- Tab 3: Files & Code Snippets -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFiles"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingVertical="8dp"
-            android:paddingBottom="80dp"
+            android:paddingBottom="84dp"
             android:visibility="gone" />
 
-        <!-- Tab 4: Agile Analytics & Workload View -->
+        <!-- Tab 4: GitHub Issues & PRs -->
+        <LinearLayout
+            android:id="@+id/layoutGitHub"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/surface"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvGithubRepoName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No GitHub Repository Linked"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvGithubRepoDesc"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Link a GitHub repository to view Issues and Pull Requests alongside ProjectHub tasks."
+                        android:textSize="12.5sp"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tvGithubRepoStats"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        android:visibility="gone" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnGithubLinkRepo"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="6dp"
+                                android:text="Link Repo"
+                                android:textSize="11.5sp"
+                                app:icon="@drawable/ic_link"
+                                app:iconSize="15dp"
+                                app:iconPadding="4dp"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnGithubRefresh"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="6dp"
+                                android:text="Sync"
+                                android:textSize="11.5sp"
+                                app:strokeColor="@color/divider"
+                                app:icon="@drawable/ic_sync"
+                                app:iconSize="15dp"
+                                app:iconPadding="4dp"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnGithubToken"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="6dp"
+                                android:text="Token"
+                                android:textSize="11.5sp"
+                                app:strokeColor="@color/divider"
+                                app:icon="@drawable/ic_key"
+                                app:iconSize="15dp"
+                                app:iconPadding="4dp"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnGithubOpenExternal"
+                                style="@style/Widget.Material3.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:text="Open"
+                                android:textSize="11.5sp"
+                                android:visibility="gone" />
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingHorizontal="16dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupGithubFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGithubAll"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="All"
+                        android:checked="true" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGithubIssues"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Issues" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGithubPrs"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pull Requests" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGithubOpen"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Open Only" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <ProgressBar
+                android:id="@+id/pbGithubLoading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvGithubEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="24dp"
+                android:gravity="center"
+                android:text="Link a GitHub repository above to browse live issues &amp; pull requests."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvGithubItems"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingVertical="4dp"
+                android:paddingBottom="84dp" />
+        </LinearLayout>
+
+        <!-- Tab 5: Agile Analytics & Workload -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/layoutAnalytics"
             android:layout_width="match_parent"
@@ -543,18 +1010,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Agile Sprint Health &amp; Velocity"
+                    android:text="Sprint Health &amp; Velocity"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
-                <!-- Task Status Breakdown Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="1dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface"
                     app:strokeColor="@color/divider"
                     app:strokeWidth="1dp">
 
@@ -567,7 +1034,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kanban Workflow Status Breakdown"
+                            android:text="Workflow Status Breakdown"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -578,15 +1045,14 @@
                             android:orientation="horizontal"
                             android:layout_marginTop="12dp">
 
-                            <!-- To Do Box -->
                             <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:orientation="vertical"
                                 android:gravity="center"
-                                android:padding="8dp"
-                                android:background="@drawable/bg_status_pill">
+                                android:padding="10dp"
+                                android:background="@drawable/bg_status_todo">
 
                                 <TextView
                                     android:id="@+id/tvCountTodo"
@@ -594,27 +1060,26 @@
                                     android:layout_height="wrap_content"
                                     android:textSize="18sp"
                                     android:textStyle="bold"
-                                    android:textColor="@color/status_todo"
+                                    android:textColor="@color/status_todo_text"
                                     android:text="0" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:textSize="11sp"
-                                    android:textColor="@color/text_secondary"
+                                    android:textSize="10.5sp"
+                                    android:textColor="@color/status_todo_text"
                                     android:text="TO DO" />
                             </LinearLayout>
 
-                            <!-- In Progress Box -->
                             <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:orientation="vertical"
                                 android:gravity="center"
-                                android:padding="8dp"
+                                android:padding="10dp"
                                 android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_badge_task">
+                                android:background="@drawable/bg_status_progress">
 
                                 <TextView
                                     android:id="@+id/tvCountInProgress"
@@ -622,27 +1087,26 @@
                                     android:layout_height="wrap_content"
                                     android:textSize="18sp"
                                     android:textStyle="bold"
-                                    android:textColor="@color/status_progress"
+                                    android:textColor="@color/status_progress_text"
                                     android:text="0" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:textSize="11sp"
-                                    android:textColor="@color/status_progress"
-                                    android:text="IN PROGRESS" />
+                                    android:textSize="10.5sp"
+                                    android:textColor="@color/status_progress_text"
+                                    android:text="ACTIVE" />
                             </LinearLayout>
 
-                            <!-- In Review Box -->
                             <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:orientation="vertical"
                                 android:gravity="center"
-                                android:padding="8dp"
+                                android:padding="10dp"
                                 android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_badge_feature">
+                                android:background="@drawable/bg_status_review">
 
                                 <TextView
                                     android:id="@+id/tvCountInReview"
@@ -650,27 +1114,26 @@
                                     android:layout_height="wrap_content"
                                     android:textSize="18sp"
                                     android:textStyle="bold"
-                                    android:textColor="@color/status_review"
+                                    android:textColor="@color/status_review_text"
                                     android:text="0" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:textSize="11sp"
-                                    android:textColor="@color/status_review"
-                                    android:text="IN REVIEW" />
+                                    android:textSize="10.5sp"
+                                    android:textColor="@color/status_review_text"
+                                    android:text="REVIEW" />
                             </LinearLayout>
 
-                            <!-- Done Box -->
                             <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:orientation="vertical"
                                 android:gravity="center"
-                                android:padding="8dp"
+                                android:padding="10dp"
                                 android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_badge_doc">
+                                android:background="@drawable/bg_status_done">
 
                                 <TextView
                                     android:id="@+id/tvCountDone"
@@ -678,27 +1141,27 @@
                                     android:layout_height="wrap_content"
                                     android:textSize="18sp"
                                     android:textStyle="bold"
-                                    android:textColor="@color/status_done"
+                                    android:textColor="@color/status_done_text"
                                     android:text="0" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:textSize="11sp"
-                                    android:textColor="@color/status_done"
+                                    android:textSize="10.5sp"
+                                    android:textColor="@color/status_done_text"
                                     android:text="DONE" />
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Issue Type Distribution Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="1dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface"
                     app:strokeColor="@color/divider"
                     app:strokeWidth="1dp">
 
@@ -711,7 +1174,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Issue Classification (Jira Types)"
+                            android:text="Issue Classification"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -729,7 +1192,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textSize="13sp"
-                                android:text="✨ Features: 0"
+                                android:text="Features: 0"
                                 android:textColor="@color/issue_feature" />
 
                             <TextView
@@ -738,7 +1201,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textSize="13sp"
-                                android:text="🐞 Bugs: 0"
+                                android:text="Bugs: 0"
                                 android:textColor="@color/issue_bug" />
                         </LinearLayout>
 
@@ -755,7 +1218,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textSize="13sp"
-                                android:text="📋 Tasks: 0"
+                                android:text="Tasks: 0"
                                 android:textColor="@color/issue_task" />
 
                             <TextView
@@ -764,19 +1227,19 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textSize="13sp"
-                                android:text="📄 Docs: 0"
+                                android:text="Docs: 0"
                                 android:textColor="@color/issue_doc" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Team Workload Allocation Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="1dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface"
                     app:strokeColor="@color/divider"
                     app:strokeWidth="1dp">
 
@@ -789,7 +1252,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Team Member Workload Breakdown"
+                            android:text="Team Workload Breakdown"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -812,13 +1275,13 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Timesheet & Work Hours Card (Zoho Projects Feature) -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="1dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface"
                     app:strokeColor="@color/divider"
                     app:strokeWidth="1dp">
 
@@ -831,7 +1294,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="⏱️ Timesheet &amp; Work Hours Logged"
+                            android:text="Timesheet &amp; Logged Hours"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -844,7 +1307,7 @@
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="@color/primary"
-                            android:text="0.0 total hours logged" />
+                            android:text="0.0 hrs" />
 
                         <TextView
                             android:id="@+id/tvPhaseHoursBreakdown"
@@ -856,7 +1319,6 @@
                             android:text="Planning: 0h • Design: 0h • Dev: 0h • Review: 0h" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
@@ -865,10 +1327,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="No items found.\nTap '+' to add one!"
+            android:text="No items found.\nTap Add below to create one."
             android:textAlignment="center"
             android:textColor="@color/text_secondary"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:visibility="gone" />
     </FrameLayout>
 
@@ -878,9 +1340,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="20dp"
-        android:text="Add Task"
-        android:textColor="@color/surface"
+        android:text="Add Issue"
+        android:textColor="@color/on_primary"
         app:backgroundTint="@color/primary"
-        app:iconTint="@color/surface" />
+        app:icon="@drawable/ic_add"
+        app:iconTint="@color/on_primary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

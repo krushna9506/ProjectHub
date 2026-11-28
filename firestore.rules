@@ -2,66 +2,859 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ===============================================================
+    // Assumed Data Model (ProjectHub Android + Web)
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (Firebase Auth UID)
+    // Fields:
+    //   - userId: string (optional/nullable, must equal {userId} if non-null)
+    //   - name: string (required, 1..120 chars)
+    //   - email: string (required, valid email, 3..254 chars; immutable once set)
+    //   - department: string (optional/nullable, 0..100 chars)
+    //   - rollNumber: string (optional/nullable, 0..50 chars)
+    //   - profileImageUrl: string (optional/nullable, http/https URL or "", 0..1000 chars)
+    //   - joinedProjectIds: list (optional/nullable, max 100 entries)
+    //   - fcmToken: string (optional/nullable, 0..512 chars)
+    //   - role: string (optional/nullable, in ['STUDENT', 'FACULTY_MENTOR'])
+    //   - collegeDomain: string (optional/nullable, 0..120 chars)
+    //   - campusVerified: bool (optional/nullable)
+    //   - skills: list (optional/nullable, max 50 entries)
+    //   - bio: string (optional/nullable, 0..1000 chars)
+    //   - githubUsername: string (optional/nullable, 0..100 chars)
+    //   - graduationYear: int (optional/nullable, 0..2100)
+    //
+    // Subcollection: users/{userId}/notifications
+    // Document ID: {notificationId}
+    // Fields:
+    //   - notificationId: string (optional/nullable, 0..128 chars)
+    //   - userId: string (required, must equal parent {userId})
+    //   - title: string (required, 1..200 chars)
+    //   - message: string (required, 0..1000 chars)
+    //   - type: string (required, 1..50 chars)
+    //   - projectId: string (optional/nullable, 0..128 chars)
+    //   - projectTitle: string (optional/nullable, 0..200 chars)
+    //   - timestamp: number | timestamp (optional/nullable, >= 0 if number)
+    //   - read: bool (required; must be false on create; only updatable field by owner)
+    //
+    // Collection: projects
+    // Document ID: {projectId}
+    // Fields:
+    //   - projectId: string (optional/nullable, immutable once set, equals {projectId})
+    //   - title: string (required, 1..150 chars)
+    //   - description: string (optional/nullable, 0..2000 chars)
+    //   - joinCode: string (optional/nullable, 0..20 chars; lead-only mutable)
+    //   - leadId: string (required, 1..128 chars; lead-only transferable)
+    //   - leadName: string (optional/nullable, 0..120 chars)
+    //   - members: map (required, 1..100 entries; maps uid -> 'LEAD'|'MEMBER'|'FACULTY')
+    //   - progressPercentage: int (optional/nullable, 0..100)
+    //   - createdAt: number | timestamp (optional/nullable, immutable once set)
+    //   - deadline: number | timestamp (optional/nullable)
+    //   - public: bool (optional/nullable; lead-only mutable)
+    //   - isPublic: bool (optional/nullable; lead-only mutable)
+    //   - category: string (optional/nullable, 0..80 chars)
+    //   - lookingFor: string (optional/nullable, 0..300 chars)
+    //   - collegeDomain: string (optional/nullable, 0..120 chars)
+    //   - githubRepoUrl: string (optional/nullable, 0..500 chars)
+    //   - venueLocation: string (optional/nullable, 0..300 chars)
+    //   - latitude: number (optional/nullable, -90.0..90.0)
+    //   - longitude: number (optional/nullable, -180.0..180.0)
+    //   - customStatuses: list (optional/nullable, 1..20 entries)
+    //   - templateType: string (optional/nullable, 0..50 chars)
+    //   - mentorId: string (optional/nullable, 0..128 chars)
+    //   - mentorName: string (optional/nullable, 0..120 chars)
+    //
+    // Subcollection: projects/{projectId}/tasks
+    // Document ID: {taskId}
+    // Fields:
+    //   - taskId, projectId, milestoneId, title, description, status, priority,
+    //     issueType, commentsCount, assignedTo, assignedToName, dueDate, taskKey,
+    //     phase, timeSpentHours, startDate, subtasks, dependsOnTaskId,
+    //     dependsOnTaskKey, tags, githubIssueUrl, githubIssueNumber
+    //
+    // Subcollection: projects/{projectId}/tasks/{taskId}/comments
+    // Document ID: {commentId}
+    // Fields:
+    //   - commentId, taskId, projectId, authorId, authorName, message, timestamp
+    //
+    // Subcollection: projects/{projectId}/milestones
+    // Document ID: {milestoneId}
+    // Fields:
+    //   - milestoneId, projectId, title, status, dueDate
+    //
+    // Subcollection: projects/{projectId}/messages
+    // Document ID: {messageId}
+    // Fields:
+    //   - messageId, projectId, senderId, senderName, senderEmail, message,
+    //     messageType, timestamp, replyToMessageId, replyToSenderName,
+    //     replyToPreview, reactions, mentionedUserIds
+    //
+    // Subcollection: projects/{projectId}/automations
+    // Document ID: {ruleId}
+    // Fields:
+    //   - ruleId, projectId, name, triggerType, triggerValue, actionType,
+    //     actionValue, enabled
+    //
+    // Subcollection: projects/{projectId}/files
+    // Document ID: {fileId}
+    // Fields:
+    //   - fileId, projectId, name, url, type, snippetContent, language,
+    //     uploadedById, uploadedByName, storagePath, fileSizeBytes,
+    //     accessLevel, timestamp
+    //
+    // Collection: join_requests
+    // Document ID: {requestId}
+    // Fields:
+    //   - requestId, projectId, projectTitle, leadId, applicantId,
+    //     applicantName, applicantEmail, message, status, timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Core Auth & Ownership Helper Functions
+    // ===============================================================
+
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 1. Users Collection & In-App Notifications
-    match /users/{userId} {
-      // Any authenticated student can view profiles (name, department, roll number)
-      allow read: if isSignedIn();
-      // Allow profile updates and allow project leads to update joinedProjectIds when joining
-      allow write: if isSignedIn();
+    function isAuthenticated() {
+      return isSignedIn();
+    }
 
-      // In-App Notifications Subcollection
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+             request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+             request.resource.data.uid == resource.data.uid;
+    }
+
+    // ===============================================================
+    // Generic Schema & Type Validation Helper Functions
+    // ===============================================================
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+             email.size() >= 3 &&
+             email.size() <= 254 &&
+             email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+             (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isReqStr(data, field, minLen, maxLen) {
+      return field in data &&
+             data[field] is string &&
+             data[field].size() >= minLen &&
+             data[field].size() <= maxLen;
+    }
+
+    function isOptStr(data, field, maxLen) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isOptUrl(data, field, maxLen) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is string &&
+              data[field].size() <= maxLen &&
+              (data[field].size() == 0 || isValidUrl(data[field])));
+    }
+
+    function isOptBool(data, field) {
+      return !(field in data) ||
+             data[field] == null ||
+             data[field] is bool;
+    }
+
+    function isOptIntRange(data, field, minVal, maxVal) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is int &&
+              data[field] >= minVal &&
+              data[field] <= maxVal);
+    }
+
+    function isOptNumRange(data, field, minVal, maxVal) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is number &&
+              data[field] >= minVal &&
+              data[field] <= maxVal);
+    }
+
+    function isOptList(data, field, maxSize) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is list && data[field].size() <= maxSize);
+    }
+
+    function isOptMap(data, field, maxSize) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is map && data[field].size() <= maxSize);
+    }
+
+    function isOptTimeValue(data, field) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is number && data[field] >= 0) ||
+             data[field] is timestamp;
+    }
+
+    function isOptMatchingId(data, field, expectedId) {
+      return !(field in data) ||
+             data[field] == null ||
+             (data[field] is string && data[field] == expectedId);
+    }
+
+    // ===============================================================
+    // Project Membership Helpers
+    // ===============================================================
+
+    function projectPath(projectId) {
+      return /databases/$(database)/documents/projects/$(projectId);
+    }
+
+    function projectExists(projectId) {
+      return exists(projectPath(projectId));
+    }
+
+    function projectData(projectId) {
+      return get(projectPath(projectId)).data;
+    }
+
+    function isProjectMember(pData) {
+      return isSignedIn() &&
+             pData != null &&
+             (
+               ('leadId' in pData && pData.leadId == request.auth.uid) ||
+               ('members' in pData &&
+                pData.members is map &&
+                request.auth.uid in pData.members &&
+                pData.members[request.auth.uid] is string &&
+                pData.members[request.auth.uid].size() > 0)
+             );
+    }
+
+    function isPublicProject(pData) {
+      return pData != null &&
+             (
+               ('isPublic' in pData && pData.isPublic == true) ||
+               ('public' in pData && pData.public == true)
+             );
+    }
+
+    function isMemberOfProject(projectId) {
+      return isSignedIn() &&
+             projectExists(projectId) &&
+             isProjectMember(projectData(projectId));
+    }
+
+    function isLeadOfProject(projectId) {
+      return isSignedIn() &&
+             projectExists(projectId) &&
+             'leadId' in projectData(projectId) &&
+             projectData(projectId).leadId == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===============================================================
+
+    function isValidUser(data, userId) {
+      return hasOnlyAllowedFields(data, [
+               'userId', 'name', 'email', 'department', 'rollNumber',
+               'profileImageUrl', 'joinedProjectIds', 'fcmToken', 'role',
+               'collegeDomain', 'campusVerified', 'skills', 'bio',
+               'githubUsername', 'graduationYear'
+             ]) &&
+             hasRequiredFields(data, ['name', 'email']) &&
+             isOptMatchingId(data, 'userId', userId) &&
+             isReqStr(data, 'name', 1, 120) &&
+             isValidEmail(data.email) &&
+             isOptStr(data, 'department', 100) &&
+             isOptStr(data, 'rollNumber', 50) &&
+             isOptUrl(data, 'profileImageUrl', 1000) &&
+             isOptList(data, 'joinedProjectIds', 100) &&
+             isOptStr(data, 'fcmToken', 512) &&
+             (!('role' in data) || data.role == null || data.role in ['STUDENT', 'FACULTY_MENTOR']) &&
+             isOptStr(data, 'collegeDomain', 120) &&
+             isOptBool(data, 'campusVerified') &&
+             isOptList(data, 'skills', 50) &&
+             isOptStr(data, 'bio', 1000) &&
+             isOptStr(data, 'githubUsername', 100) &&
+             isOptIntRange(data, 'graduationYear', 0, 2100);
+    }
+
+    function isValidNotification(data, userId) {
+      return hasOnlyAllowedFields(data, [
+               'notificationId', 'userId', 'title', 'message', 'type',
+               'projectId', 'projectTitle', 'timestamp', 'read'
+             ]) &&
+             hasRequiredFields(data, ['userId', 'title', 'message', 'type', 'read']) &&
+             isOptStr(data, 'notificationId', 128) &&
+             data.userId is string &&
+             data.userId == userId &&
+             isReqStr(data, 'title', 1, 200) &&
+             isReqStr(data, 'message', 0, 1000) &&
+             isReqStr(data, 'type', 1, 50) &&
+             isOptStr(data, 'projectId', 128) &&
+             isOptStr(data, 'projectTitle', 200) &&
+             isOptTimeValue(data, 'timestamp') &&
+             data.read is bool;
+    }
+
+    function isValidProject(data, projectId) {
+      return hasOnlyAllowedFields(data, [
+               'projectId', 'title', 'description', 'joinCode', 'leadId',
+               'leadName', 'members', 'progressPercentage', 'createdAt',
+               'deadline', 'public', 'isPublic', 'category', 'lookingFor',
+               'collegeDomain', 'githubRepoUrl', 'venueLocation', 'latitude',
+               'longitude', 'customStatuses', 'templateType', 'mentorId',
+               'mentorName'
+             ]) &&
+             hasRequiredFields(data, ['title', 'leadId', 'members']) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'title', 1, 150) &&
+             isOptStr(data, 'description', 2000) &&
+             isOptStr(data, 'joinCode', 20) &&
+             isReqStr(data, 'leadId', 1, 128) &&
+             isOptStr(data, 'leadName', 120) &&
+             data.members is map &&
+             data.members.size() >= 1 &&
+             data.members.size() <= 100 &&
+             data.leadId in data.members &&
+             data.members[data.leadId] == 'LEAD' &&
+             isOptIntRange(data, 'progressPercentage', 0, 100) &&
+             isOptTimeValue(data, 'createdAt') &&
+             isOptTimeValue(data, 'deadline') &&
+             isOptBool(data, 'public') &&
+             isOptBool(data, 'isPublic') &&
+             isOptStr(data, 'category', 80) &&
+             isOptStr(data, 'lookingFor', 300) &&
+             isOptStr(data, 'collegeDomain', 120) &&
+             isOptStr(data, 'githubRepoUrl', 500) &&
+             isOptStr(data, 'venueLocation', 300) &&
+             isOptNumRange(data, 'latitude', -90.0, 90.0) &&
+             isOptNumRange(data, 'longitude', -180.0, 180.0) &&
+             (!('customStatuses' in data) ||
+              data.customStatuses == null ||
+              (data.customStatuses is list &&
+               data.customStatuses.size() >= 1 &&
+               data.customStatuses.size() <= 20)) &&
+             isOptStr(data, 'templateType', 50) &&
+             isOptStr(data, 'mentorId', 128) &&
+             isOptStr(data, 'mentorName', 120);
+    }
+
+    function isValidTask(data, projectId, taskId) {
+      return hasOnlyAllowedFields(data, [
+               'taskId', 'projectId', 'milestoneId', 'title', 'description',
+               'status', 'priority', 'issueType', 'commentsCount', 'assignedTo',
+               'assignedToName', 'dueDate', 'taskKey', 'phase', 'timeSpentHours',
+               'startDate', 'subtasks', 'dependsOnTaskId', 'dependsOnTaskKey',
+               'tags', 'githubIssueUrl', 'githubIssueNumber'
+             ]) &&
+             hasRequiredFields(data, ['title', 'status']) &&
+             isOptMatchingId(data, 'taskId', taskId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isOptStr(data, 'milestoneId', 128) &&
+             isReqStr(data, 'title', 1, 200) &&
+             isOptStr(data, 'description', 4000) &&
+             isReqStr(data, 'status', 1, 50) &&
+             (!('priority' in data) || data.priority == null || data.priority in ['LOW', 'MEDIUM', 'HIGH', 'URGENT']) &&
+             (!('issueType' in data) || data.issueType == null || data.issueType in ['TASK', 'BUG', 'FEATURE', 'DOCUMENTATION', 'DOC']) &&
+             isOptIntRange(data, 'commentsCount', 0, 100000) &&
+             isOptStr(data, 'assignedTo', 128) &&
+             isOptStr(data, 'assignedToName', 120) &&
+             isOptTimeValue(data, 'dueDate') &&
+             isOptStr(data, 'taskKey', 30) &&
+             isOptStr(data, 'phase', 50) &&
+             isOptNumRange(data, 'timeSpentHours', 0, 100000) &&
+             isOptTimeValue(data, 'startDate') &&
+             isOptList(data, 'subtasks', 100) &&
+             isOptStr(data, 'dependsOnTaskId', 128) &&
+             isOptStr(data, 'dependsOnTaskKey', 30) &&
+             isOptList(data, 'tags', 30) &&
+             isOptUrl(data, 'githubIssueUrl', 500) &&
+             isOptIntRange(data, 'githubIssueNumber', 0, 10000000);
+    }
+
+    function isValidTaskComment(data, projectId, taskId, commentId) {
+      return hasOnlyAllowedFields(data, [
+               'commentId', 'taskId', 'projectId', 'authorId', 'authorName',
+               'message', 'timestamp'
+             ]) &&
+             hasRequiredFields(data, ['authorId', 'message']) &&
+             isOptMatchingId(data, 'commentId', commentId) &&
+             isOptMatchingId(data, 'taskId', taskId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'authorId', 1, 128) &&
+             isOptStr(data, 'authorName', 120) &&
+             isReqStr(data, 'message', 1, 2000) &&
+             isOptTimeValue(data, 'timestamp');
+    }
+
+    function isValidMilestone(data, projectId, milestoneId) {
+      return hasOnlyAllowedFields(data, [
+               'milestoneId', 'projectId', 'title', 'status', 'dueDate'
+             ]) &&
+             hasRequiredFields(data, ['title', 'status']) &&
+             isOptMatchingId(data, 'milestoneId', milestoneId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'title', 1, 200) &&
+             data.status is string &&
+             data.status in ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DONE'] &&
+             isOptTimeValue(data, 'dueDate');
+    }
+
+    function isValidChatMessage(data, projectId, messageId) {
+      return hasOnlyAllowedFields(data, [
+               'messageId', 'projectId', 'senderId', 'senderName', 'senderEmail',
+               'message', 'messageType', 'timestamp', 'replyToMessageId',
+               'replyToSenderName', 'replyToPreview', 'reactions',
+               'mentionedUserIds'
+             ]) &&
+             hasRequiredFields(data, ['senderId', 'message']) &&
+             isOptMatchingId(data, 'messageId', messageId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'senderId', 1, 128) &&
+             isOptStr(data, 'senderName', 120) &&
+             isOptStr(data, 'senderEmail', 254) &&
+             isReqStr(data, 'message', 1, 2000) &&
+             (!('messageType' in data) ||
+              data.messageType == null ||
+              data.messageType in ['TEXT', 'CODE', 'LINK', 'CALL', 'AUTOMATION']) &&
+             isOptTimeValue(data, 'timestamp') &&
+             isOptStr(data, 'replyToMessageId', 128) &&
+             isOptStr(data, 'replyToSenderName', 120) &&
+             isOptStr(data, 'replyToPreview', 500) &&
+             isOptMap(data, 'reactions', 30) &&
+             isOptList(data, 'mentionedUserIds', 50);
+    }
+
+    function isValidWorkflowRule(data, projectId, ruleId) {
+      return hasOnlyAllowedFields(data, [
+               'ruleId', 'projectId', 'name', 'triggerType', 'triggerValue',
+               'actionType', 'actionValue', 'enabled'
+             ]) &&
+             hasRequiredFields(data, ['name', 'triggerType', 'actionType', 'enabled']) &&
+             isOptMatchingId(data, 'ruleId', ruleId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'name', 1, 150) &&
+             data.triggerType is string &&
+             data.triggerType in [
+               'TASK_ASSIGNED', 'TASK_STATUS_CHANGED',
+               'ALL_SUBTASKS_COMPLETED', 'MILESTONE_COMPLETED'
+             ] &&
+             isOptStr(data, 'triggerValue', 100) &&
+             data.actionType is string &&
+             data.actionType in [
+               'NOTIFY_ASSIGNEE', 'NOTIFY_LEAD', 'POST_CHAT_UPDATE',
+               'SET_TASK_STATUS', 'SET_TASK_PHASE'
+             ] &&
+             isOptStr(data, 'actionValue', 200) &&
+             data.enabled is bool;
+    }
+
+    function isValidStoragePath(path, projectId) {
+      return path == '' ||
+             (path is string &&
+              path.size() <= 500 &&
+              path.split('/').size() >= 3 &&
+              path.split('/')[0] == 'project_files' &&
+              path.split('/')[1] == projectId &&
+              !path.matches('.*\\.\\..*'));
+    }
+
+    function isValidFileReference(data, projectId, fileId) {
+      return hasOnlyAllowedFields(data, [
+               'fileId', 'projectId', 'name', 'url', 'type', 'snippetContent',
+               'language', 'uploadedById', 'uploadedByName', 'storagePath',
+               'fileSizeBytes', 'accessLevel', 'timestamp'
+             ]) &&
+             hasRequiredFields(data, ['name', 'type']) &&
+             isOptMatchingId(data, 'fileId', fileId) &&
+             isOptMatchingId(data, 'projectId', projectId) &&
+             isReqStr(data, 'name', 1, 255) &&
+             isOptUrl(data, 'url', 2000) &&
+             data.type is string &&
+             data.type in ['DOCUMENT', 'IMAGE', 'LINK', 'CODE', 'GITHUB'] &&
+             isOptStr(data, 'snippetContent', 20000) &&
+             isOptStr(data, 'language', 50) &&
+             isOptStr(data, 'uploadedById', 128) &&
+             isOptStr(data, 'uploadedByName', 120) &&
+             (!('storagePath' in data) || data.storagePath == null || isValidStoragePath(data.storagePath, projectId)) &&
+             isOptIntRange(data, 'fileSizeBytes', 0, 52428800) &&
+             (!('accessLevel' in data) ||
+              data.accessLevel == null ||
+              data.accessLevel in ['MEMBERS_ONLY', 'LEAD_ONLY', 'PUBLIC']) &&
+             isOptTimeValue(data, 'timestamp');
+    }
+
+    function isValidJoinRequest(data, requestId) {
+      return hasOnlyAllowedFields(data, [
+               'requestId', 'projectId', 'projectTitle', 'leadId', 'applicantId',
+               'applicantName', 'applicantEmail', 'message', 'status', 'timestamp'
+             ]) &&
+             hasRequiredFields(data, ['projectId', 'leadId', 'applicantId', 'status']) &&
+             isOptMatchingId(data, 'requestId', requestId) &&
+             isReqStr(data, 'projectId', 1, 128) &&
+             isOptStr(data, 'projectTitle', 150) &&
+             isReqStr(data, 'leadId', 1, 128) &&
+             isReqStr(data, 'applicantId', 1, 128) &&
+             isOptStr(data, 'applicantName', 120) &&
+             isOptStr(data, 'applicantEmail', 254) &&
+             isOptStr(data, 'message', 1000) &&
+             data.status is string &&
+             data.status in ['PENDING', 'ACCEPTED', 'REJECTED'] &&
+             isOptTimeValue(data, 'timestamp');
+    }
+
+    // ===============================================================
+    // Project Update Authorization Helpers
+    // ===============================================================
+
+    function areImmutableProjectFieldsUnchanged() {
+      return (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
+             (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+    }
+
+    function isLeadOrAllowedMemberUpdate() {
+      return isProjectMember(resource.data) &&
+             (
+               // Project Lead: full valid project updates, including member approvals and ownership transfer
+               resource.data.leadId == request.auth.uid ||
+               // Non-lead member: may update collaborative project metadata (e.g., progress, statuses, venue, github)
+               // or leave the project by removing ONLY themselves, but cannot alter leadId, joinCode, visibility, or others' roles
+               (
+                 request.resource.data.leadId == resource.data.leadId &&
+                 (
+                   !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                     'members', 'leadId', 'joinCode', 'public', 'isPublic'
+                   ]) ||
+                   (
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+                     'members' in resource.data &&
+                     resource.data.members is map &&
+                     request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid]) &&
+                     !(request.auth.uid in request.resource.data.members)
+                   )
+                 )
+               )
+             );
+    }
+
+    function isSelfJoinViaCodeUpdate() {
+      return 'leadId' in resource.data &&
+             resource.data.leadId != request.auth.uid &&
+             'members' in resource.data &&
+             resource.data.members is map &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+             request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid]) &&
+             request.resource.data.members[request.auth.uid] == 'MEMBER' &&
+             (!(request.auth.uid in resource.data.members) || resource.data.members[request.auth.uid] == 'MEMBER');
+    }
+
+    // ===============================================================
+    // 1. Users Collection & In-App Notifications
+    // ===============================================================
+
+    match /users/{userId} {
+      // Signed-in users can read profiles for the Campus Talent & Mentor directory
+      // and for resolving project teammate profiles.
+      allow read: if isSignedIn();
+
+      allow create: if isOwner(userId) &&
+                       isValidUser(request.resource.data, userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidUser(request.resource.data, userId) &&
+                       (!('userId' in resource.data) || request.resource.data.userId == resource.data.userId) &&
+                       (!('email' in resource.data) || request.resource.data.email == resource.data.email);
+
+      // Prevent accidental deletion of user profile documents.
+      allow delete: if false;
+
       match /notifications/{notificationId} {
-        allow read, write: if isSignedIn();
+        allow read: if isOwner(userId);
+
+        // Any signed-in user may dispatch an unread notification to a recipient.
+        allow create: if isSignedIn() &&
+                         userId.size() > 0 &&
+                         userId.size() <= 128 &&
+                         isValidNotification(request.resource.data, userId) &&
+                         request.resource.data.read == false;
+
+        // Owner may only toggle/update the read status.
+        allow update: if isOwner(userId) &&
+                         isValidNotification(request.resource.data, userId) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+        allow delete: if isOwner(userId);
       }
     }
 
-    // 2. Projects Collection & Subcollections (Tasks, Sprints, Files, Messages)
+    // ===============================================================
+    // 2. Projects Collection & Subcollections
+    // ===============================================================
+
     match /projects/{projectId} {
-      // Any authenticated user can read projects (essential for Search, Campus Explore, and Join via Code)
-      allow read: if isSignedIn();
+      // Single-doc fetches require membership or public visibility.
+      // Collection list queries allow signed-in users so Explore (unfiltered public feed)
+      // and Join-by-Code (private joinCode lookup) succeed without PERMISSION_DENIED;
+      // all sensitive project internals reside in member-gated subcollections below.
+      allow get: if isSignedIn() &&
+                    resource != null &&
+                    (isProjectMember(resource.data) || isPublicProject(resource.data));
 
-      // Any authenticated student can create a new project
-      allow create: if isSignedIn();
+      allow list: if isSignedIn();
 
-      // Members and joining applicants can update project (e.g. adding self to members map)
-      allow update: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       isValidProject(request.resource.data, projectId) &&
+                       request.resource.data.leadId == request.auth.uid &&
+                       request.resource.data.members[request.auth.uid] == 'LEAD';
 
-      // Lead can delete project
-      allow delete: if isSignedIn() && (resource == null || resource.data.leadId == request.auth.uid);
+      allow update: if isSignedIn() &&
+                       resource != null &&
+                       isValidProject(request.resource.data, projectId) &&
+                       areImmutableProjectFieldsUnchanged() &&
+                       (isLeadOrAllowedMemberUpdate() || isSelfJoinViaCodeUpdate());
 
-      // Subcollections: Tasks & Comments
+      allow delete: if isSignedIn() &&
+                       resource != null &&
+                       'leadId' in resource.data &&
+                       resource.data.leadId == request.auth.uid;
+
+      // Subcollection: Tasks & Task Comments
       match /tasks/{taskId} {
-        allow read, write: if isSignedIn();
+        allow read: if isMemberOfProject(projectId);
+
+        allow create: if isMemberOfProject(projectId) &&
+                         isValidTask(request.resource.data, projectId, taskId);
+
+        allow update: if isMemberOfProject(projectId) &&
+                         isValidTask(request.resource.data, projectId, taskId) &&
+                         (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
+                         (!('taskId' in resource.data) || request.resource.data.taskId == resource.data.taskId);
+
+        allow delete: if isMemberOfProject(projectId);
 
         match /comments/{commentId} {
-          allow read, write: if isSignedIn();
+          allow read: if isMemberOfProject(projectId);
+
+          allow create: if isMemberOfProject(projectId) &&
+                           exists(/databases/$(database)/documents/projects/$(projectId)/tasks/$(taskId)) &&
+                           isValidTaskComment(request.resource.data, projectId, taskId, commentId) &&
+                           request.resource.data.authorId == request.auth.uid;
+
+          allow update: if isMemberOfProject(projectId) &&
+                           resource != null &&
+                           (
+                             ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
+                             isLeadOfProject(projectId)
+                           ) &&
+                           isValidTaskComment(request.resource.data, projectId, taskId, commentId) &&
+                           areImmutableFieldsUnchanged(['commentId', 'taskId', 'projectId', 'authorId', 'timestamp']);
+
+          allow delete: if isMemberOfProject(projectId) &&
+                           resource != null &&
+                           (
+                             ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
+                             isLeadOfProject(projectId)
+                           );
         }
       }
 
-      // Subcollections: Sprints & Milestones
+      // Subcollection: Milestones
       match /milestones/{milestoneId} {
-        allow read, write: if isSignedIn();
+        allow read: if isMemberOfProject(projectId);
+
+        allow create: if isMemberOfProject(projectId) &&
+                         isValidMilestone(request.resource.data, projectId, milestoneId);
+
+        allow update: if isMemberOfProject(projectId) &&
+                         isValidMilestone(request.resource.data, projectId, milestoneId) &&
+                         (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
+                         (!('milestoneId' in resource.data) || request.resource.data.milestoneId == resource.data.milestoneId);
+
+        allow delete: if isMemberOfProject(projectId);
       }
 
-      // Subcollections: Shared Files & Code Snippets
-      match /files/{fileId} {
-        allow read, write: if isSignedIn();
-      }
-
-      // Subcollections: Real-time Group Chat Messages
+      // Subcollection: Team Chat Messages
       match /messages/{messageId} {
-        allow read, write: if isSignedIn();
+        allow read: if isMemberOfProject(projectId);
+
+        allow create: if isMemberOfProject(projectId) &&
+                         isValidChatMessage(request.resource.data, projectId, messageId) &&
+                         (
+                           request.resource.data.senderId == request.auth.uid ||
+                           (
+                             request.resource.data.senderId == 'automation_bot' &&
+                             'messageType' in request.resource.data &&
+                             request.resource.data.messageType == 'AUTOMATION'
+                           )
+                         );
+
+        allow update: if isMemberOfProject(projectId) &&
+                         resource != null &&
+                         isValidChatMessage(request.resource.data, projectId, messageId) &&
+                         (
+                           // Any project member can toggle emoji reactions without altering message content
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) ||
+                           // Original sender can edit message content with immutable identity/timestamp
+                           (
+                             'senderId' in resource.data &&
+                             resource.data.senderId == request.auth.uid &&
+                             areImmutableFieldsUnchanged(['messageId', 'projectId', 'senderId', 'timestamp'])
+                           )
+                         );
+
+        allow delete: if isMemberOfProject(projectId) &&
+                         resource != null &&
+                         (
+                           ('senderId' in resource.data && resource.data.senderId == request.auth.uid) ||
+                           isLeadOfProject(projectId)
+                         );
+      }
+
+      // Subcollection: Workflow Automation Rules
+      match /automations/{ruleId} {
+        allow read: if isMemberOfProject(projectId);
+
+        allow create: if isMemberOfProject(projectId) &&
+                         isValidWorkflowRule(request.resource.data, projectId, ruleId);
+
+        allow update: if isMemberOfProject(projectId) &&
+                         isValidWorkflowRule(request.resource.data, projectId, ruleId) &&
+                         (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
+                         (!('ruleId' in resource.data) || request.resource.data.ruleId == resource.data.ruleId);
+
+        allow delete: if isMemberOfProject(projectId);
+      }
+
+      // Subcollection: Shared Files & Code Snippets
+      match /files/{fileId} {
+        allow read: if isSignedIn() &&
+                       (
+                         (
+                           isMemberOfProject(projectId) &&
+                           (
+                             resource == null ||
+                             !('accessLevel' in resource.data) ||
+                             resource.data.accessLevel != 'LEAD_ONLY' ||
+                             isLeadOfProject(projectId) ||
+                             ('uploadedById' in resource.data && resource.data.uploadedById == request.auth.uid)
+                           )
+                         ) ||
+                         (
+                           resource != null &&
+                           'accessLevel' in resource.data &&
+                           resource.data.accessLevel == 'PUBLIC' &&
+                           projectExists(projectId) &&
+                           isPublicProject(projectData(projectId))
+                         )
+                       );
+
+        allow create: if isMemberOfProject(projectId) &&
+                         isValidFileReference(request.resource.data, projectId, fileId) &&
+                         (
+                           !('uploadedById' in request.resource.data) ||
+                           request.resource.data.uploadedById == null ||
+                           request.resource.data.uploadedById == '' ||
+                           request.resource.data.uploadedById == request.auth.uid
+                         );
+
+        allow update: if isMemberOfProject(projectId) &&
+                         resource != null &&
+                         (
+                           isLeadOfProject(projectId) ||
+                           ('uploadedById' in resource.data && resource.data.uploadedById == request.auth.uid)
+                         ) &&
+                         isValidFileReference(request.resource.data, projectId, fileId) &&
+                         (!('projectId' in resource.data) || request.resource.data.projectId == resource.data.projectId) &&
+                         (!('fileId' in resource.data) || request.resource.data.fileId == resource.data.fileId) &&
+                         (!('uploadedById' in resource.data) || request.resource.data.uploadedById == resource.data.uploadedById);
+
+        allow delete: if isMemberOfProject(projectId) &&
+                         resource != null &&
+                         (
+                           isLeadOfProject(projectId) ||
+                           ('uploadedById' in resource.data && resource.data.uploadedById == request.auth.uid)
+                         );
       }
     }
 
+    // ===============================================================
     // 3. Join Requests Collection (Campus Discovery)
+    // ===============================================================
+
     match /join_requests/{requestId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn() &&
+                     resource != null &&
+                     (
+                       ('applicantId' in resource.data && resource.data.applicantId == request.auth.uid) ||
+                       ('leadId' in resource.data && resource.data.leadId == request.auth.uid)
+                     );
+
+      allow create: if isSignedIn() &&
+                       isValidJoinRequest(request.resource.data, requestId) &&
+                       request.resource.data.applicantId == request.auth.uid &&
+                       request.resource.data.status == 'PENDING' &&
+                       projectExists(request.resource.data.projectId) &&
+                       'leadId' in projectData(request.resource.data.projectId) &&
+                       projectData(request.resource.data.projectId).leadId == request.resource.data.leadId;
+
+      allow update: if isSignedIn() &&
+                       resource != null &&
+                       'leadId' in resource.data &&
+                       resource.data.leadId == request.auth.uid &&
+                       'status' in resource.data &&
+                       resource.data.status == 'PENDING' &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                       request.resource.data.status in ['ACCEPTED', 'REJECTED'] &&
+                       isValidJoinRequest(request.resource.data, requestId);
+
+      allow delete: if isSignedIn() &&
+                       resource != null &&
+                       (
+                         ('applicantId' in resource.data && resource.data.applicantId == request.auth.uid) ||
+                         ('leadId' in resource.data && resource.data.leadId == request.auth.uid)
+                       );
+    }
+
+    // ===============================================================
+    // Default Deny Catch-All
+    // ===============================================================
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

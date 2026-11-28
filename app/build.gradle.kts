@@ -46,6 +46,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel:2.8.7")
     implementation("androidx.lifecycle:lifecycle-livedata:2.8.7")
 
+    // Background WorkManager (deadline alerts)
+    implementation("androidx.work:work-runtime:2.10.0")
+
     // Firebase (Using BoM)
     implementation(platform("com.google.firebase:firebase-bom:35.2.0"))
     implementation("com.google.firebase:firebase-auth")
@@ -57,6 +60,9 @@ dependencies {
     // Image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // JSON parsing
+    implementation("com.google.code.gson:gson:2.11.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

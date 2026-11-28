@@ -7,36 +7,37 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- Header Toolbar -->
+    <!-- Unified Top Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="8dp"
         android:gravity="center_vertical"
-        android:background="@color/surface"
-        android:elevation="4dp">
+        android:background="@color/surface">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/text_primary" />
+            android:src="@drawable/ic_back"
+            android:padding="12dp"
+            android:contentDescription="Back" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="4dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Campus Explore"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
@@ -44,21 +45,58 @@
                 android:id="@+id/tvDomainInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Find SIH &amp; Campus Project Teammates"
+                android:text="Discover projects, teammates, and faculty mentors"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <!-- Mode Toggle -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="10dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupExploreMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipExploreModeProjects"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Public Projects"
+                android:checked="true" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipExploreModePeople"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Teammates &amp; Mentors" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
 
     <!-- Search Bar Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="6dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="2dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="4dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
         app:strokeWidth="1dp"
         app:strokeColor="@color/divider"
         app:cardBackgroundColor="@color/surface">
@@ -68,14 +106,14 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="4dp">
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="2dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔍"
-                android:textSize="15sp" />
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                android:contentDescription="Search" />
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSearchQuery"
@@ -83,29 +121,33 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@null"
-                android:hint="Search project name, code, lead, skill..."
+                android:hint="Search project name, lead, skill..."
                 android:padding="10dp"
-                android:textSize="14sp"
+                android:textSize="13.5sp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
                 android:inputType="text"
                 android:maxLines="1" />
 
             <ImageButton
                 android:id="@+id/btnClearSearch"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:src="@drawable/ic_close"
+                android:padding="8dp"
                 android:visibility="gone"
-                app:tint="@color/text_secondary" />
+                android:contentDescription="Clear search" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Filter Chips Row -->
+    <!-- Filter Chips Row (Projects) -->
     <HorizontalScrollView
+        android:id="@+id/hsvProjectCategories"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none"
-        android:paddingHorizontal="12dp"
+        android:paddingHorizontal="16dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.chip.ChipGroup
@@ -120,7 +162,7 @@
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="All Projects"
+                android:text="All"
                 android:checked="true" />
 
             <com.google.android.material.chip.Chip
@@ -128,35 +170,83 @@
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🏆 SIH Hackathon" />
+                android:text="Hackathon" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCategoryAI"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🤖 AI / ML" />
+                android:text="AI / ML" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCategoryMobile"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📱 Mobile App" />
+                android:text="Mobile" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCategoryWeb"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🌐 Web Dev" />
+                android:text="Web" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipCategoryGeneral"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⚡ General" />
+                android:text="Academic" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Filter Chips Row (Campus Talent & Mentors) -->
+    <HorizontalScrollView
+        android:id="@+id/hsvPeopleFilters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupPeopleFilters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPeopleAll"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="All Members"
+                android:checked="true" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPeopleMentors"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Faculty Mentors" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPeopleVerified"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Verified Campus" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPeopleStudents"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Students" />
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
 
@@ -173,7 +263,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="48dp"
-        android:text="No matching projects found.\nTry a different search term or create one!"
+        android:text="No matching items found.\nTry a different search term."
         android:textAlignment="center"
         android:textSize="14sp"
         android:textColor="@color/text_secondary"
@@ -186,5 +276,14 @@
         android:clipToPadding="false"
         android:paddingTop="4dp"
         android:paddingBottom="16dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCampusUsers"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="16dp"
+        android:visibility="gone" />
 
 </LinearLayout>

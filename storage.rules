@@ -1,13 +1,30 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Project files, documents, APKs, diagrams & images uploaded by teammates
+    // Project files, documents, diagrams & images uploaded by teammates
     match /project_files/{projectId}/{fileName} {
-      // Any authenticated student/member can read or download project files
+      // Authenticated users can read uploaded project assets
       allow read: if request.auth != null;
-      // Allow upload up to 50MB per file for authenticated team members
-      allow write: if request.auth != null
-                   && request.resource.size < 50 * 1024 * 1024;
+
+      // Allow upload up to 50MB per file by authenticated users, recording uploader metadata
+      allow create, update: if request.auth != null
+                            && request.resource != null
+                            && request.resource.size < 50 * 1024 * 1024
+                            && (
+                              !('uploadedBy' in request.resource.metadata)
+                              || request.resource.metadata.uploadedBy == request.auth.uid
+                              || request.resource.metadata.uploadedBy == ''
+                            );
+
+      // Allow uploader (or authenticated member when legacy metadata is absent) to delete
+      allow delete: if request.auth != null
+                    && (
+                      resource == null
+                      || resource.metadata == null
+                      || !('uploadedBy' in resource.metadata)
+                      || resource.metadata.uploadedBy == ''
+                      || resource.metadata.uploadedBy == request.auth.uid
+                    );
     }
   }
 }
