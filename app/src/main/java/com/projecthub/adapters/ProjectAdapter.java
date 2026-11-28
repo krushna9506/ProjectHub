@@ -54,12 +54,14 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         String initial = !title.isEmpty() ? title.substring(0, 1).toUpperCase(Locale.getDefault()) : "P";
         holder.tvAvatar.setText(initial);
 
-        String category = project.getCategory() != null && !project.getCategory().isEmpty() 
-            ? project.getCategory().toUpperCase(Locale.getDefault()) : "GENERAL";
+        String category = project.getCategory() != null && !project.getCategory().isEmpty()
+                ? project.getCategory().toUpperCase(Locale.getDefault())
+                : "GENERAL";
         holder.tvCategory.setText(category);
 
         String desc = project.getDescription() != null && !project.getDescription().isEmpty()
-            ? project.getDescription() : "No project description provided.";
+                ? project.getDescription()
+                : "No project description provided.";
         holder.tvDesc.setText(desc);
 
         holder.tvJoinCode.setText(project.getJoinCode() != null ? project.getJoinCode() : "");
@@ -85,7 +87,8 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ProjectV
         holder.tvProgressPercent.setText(progress + "%");
 
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) listener.onProjectClick(project);
+            if (listener != null)
+                listener.onProjectClick(project);
         });
     }
 

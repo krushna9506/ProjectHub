@@ -116,4 +116,23 @@ public class ProjectDetailsViewModel extends ViewModel {
             }
         });
     }
+
+    public void uploadProjectFile(String projectId, android.net.Uri fileUri, String fileName, 
+                                  String uploadedByName, ProjectRepository.StorageUploadCallback callback) {
+        repository.uploadProjectFile(projectId, fileUri, fileName, uploadedByName, callback);
+    }
+
+    public void updateProjectLocation(String projectId, String venue, double lat, double lng) {
+        repository.updateProjectLocation(projectId, venue, lat, lng, new ProjectRepository.OperationCallback() {
+            @Override
+            public void onSuccess() {
+                actionMessage.setValue("Meetup venue updated!");
+            }
+
+            @Override
+            public void onError(String message) {
+                actionMessage.setValue("Failed to update venue: " + message);
+            }
+        });
+    }
 }

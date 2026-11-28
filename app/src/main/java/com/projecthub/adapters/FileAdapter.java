@@ -79,6 +79,18 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.FileViewHolder
             holder.btnCopyCode.setVisibility(View.GONE);
             holder.btnOpen.setVisibility(View.VISIBLE);
             holder.btnOpen.setText("View on GitHub ↗");
+        } else if ("IMAGE".equalsIgnoreCase(type)) {
+            holder.tvFileType.setText("🖼️ PROJECT IMAGE");
+            holder.layoutCodeSnippet.setVisibility(View.GONE);
+            holder.btnCopyCode.setVisibility(View.GONE);
+            holder.btnOpen.setVisibility(View.VISIBLE);
+            holder.btnOpen.setText("View Image ↗");
+        } else if ("DOCUMENT".equalsIgnoreCase(type)) {
+            holder.tvFileType.setText("📁 PROJECT DOC");
+            holder.layoutCodeSnippet.setVisibility(View.GONE);
+            holder.btnCopyCode.setVisibility(View.GONE);
+            holder.btnOpen.setVisibility(View.VISIBLE);
+            holder.btnOpen.setText("Download Document ↗");
         } else {
             holder.tvFileType.setText("RESOURCE LINK");
             holder.layoutCodeSnippet.setVisibility(View.GONE);

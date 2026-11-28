@@ -1,8 +1,14 @@
 package com.projecthub.ui;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -12,8 +18,11 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -36,6 +45,7 @@ import com.projecthub.models.FileReference;
 import com.projecthub.models.Milestone;
 import com.projecthub.models.Project;
 import com.projecthub.models.Task;
+import com.projecthub.repository.ProjectRepository;
 import com.projecthub.viewmodel.ProjectDetailsViewModel;
 
 import java.text.SimpleDateFormat;
@@ -55,6 +65,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     private ChatMessageAdapter chatAdapter;
 
     private TextView tvTitle, tvDesc, tvJoinCode, tvOverallProgress, tvEmptyState;
+    private TextView tvProjectLocation;
     private ProgressBar pbOverallProgress;
     private TabLayout tabLayout;
 
@@ -63,8 +74,18 @@ public class ProjectDetailsActivity extends AppCompatActivity {
     private RecyclerView rvTasks, rvChatMessages, rvMilestones, rvFiles;
     private ExtendedFloatingActionButton fabAction;
 
-    // Top Meeting Action
-    private MaterialButton btnLiveCall, btnShareCallInChat;
+    // Top Meeting & Share Action
+    private MaterialButton btnLiveCall, btnShareCallInChat, btnShareProject;
+
+    // Storage File Picker
+    private ActivityResultLauncher<String> filePickerLauncher;
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
+    private Uri selectedFileUri = null;
+    private String selectedFileName = "";
+    private TextView tvSelectedFileStatus;
+    private ProgressBar pbUploadStorage;
+    private TextView tvUploadStoragePercent;
+    private Project currentProject = null;
 
     // Chat Input Views
     private TextInputEditText etChatMessageInput;
@@ -101,6 +122,32 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         projectCode = getIntent().getStringExtra("PROJECT_CODE");
         projectDeadline = getIntent().getLongExtra("PROJECT_DEADLINE", 0);
 
+        filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    selectedFileName = getFileNameFromUri(uri);
+                    if (tvSelectedFileStatus != null) {
+                        tvSelectedFileStatus.setText("Selected: " + selectedFileName);
+                    }
+                }
+            }
+        );
+
+        locationPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            result -> {
+                Boolean fine = result.get(Manifest.permission.ACCESS_FINE_LOCATION);
+                Boolean coarse = result.get(Manifest.permission.ACCESS_COARSE_LOCATION);
+                if ((fine != null && fine) || (coarse != null && coarse)) {
+                    detectAndSaveLocation();
+                } else {
+                    Toast.makeText(this, "Location permission denied. Enter venue manually.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        );
+
         initViews();
         setupTabs();
         setupRecyclerViews();
@@ -129,6 +176,7 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         tvTitle = findViewById(R.id.tvProjectTitle);
         tvDesc = findViewById(R.id.tvProjectDesc);
         tvJoinCode = findViewById(R.id.tvProjectJoinCode);
+        tvProjectLocation = findViewById(R.id.tvProjectLocation);
         tvOverallProgress = findViewById(R.id.tvOverallProgress);
         tvEmptyState = findViewById(R.id.tvEmptyState);
         pbOverallProgress = findViewById(R.id.pbOverallProgress);
@@ -147,8 +195,12 @@ public class ProjectDetailsActivity extends AppCompatActivity {
 
         btnLiveCall = findViewById(R.id.btnLiveCall);
         btnShareCallInChat = findViewById(R.id.btnShareCallInChat);
+        btnShareProject = findViewById(R.id.btnShareProject);
         etChatMessageInput = findViewById(R.id.etChatMessageInput);
         btnSendChatMessage = findViewById(R.id.btnSendChatMessage);
+
+        tvProjectLocation.setOnClickListener(v -> showLocationDialog());
+        btnShareProject.setOnClickListener(v -> shareProjectSummary());
 
         chipGroupFilters = findViewById(R.id.chipGroupFilters);
 
@@ -398,10 +450,17 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         // Project details
         viewModel.getProject().observe(this, project -> {
             if (project != null) {
+                currentProject = project;
                 if (project.getTitle() != null) tvTitle.setText(project.getTitle());
                 if (project.getDescription() != null) tvDesc.setText(project.getDescription());
                 projectDeadline = project.getDeadline();
                 updateCountdownWidget(project);
+
+                if (project.getVenueLocation() != null && !project.getVenueLocation().isEmpty()) {
+                    tvProjectLocation.setText("📍 " + project.getVenueLocation());
+                } else {
+                    tvProjectLocation.setText("📍 Set Campus / Lab Venue");
+                }
             }
         });
 
@@ -656,28 +715,100 @@ public class ProjectDetailsActivity extends AppCompatActivity {
         TextInputLayout tilFileSnippet = view.findViewById(R.id.tilFileSnippet);
         TextInputEditText etSnippet = view.findViewById(R.id.etFileSnippet);
 
+        View layoutDeviceFile = view.findViewById(R.id.layoutDeviceFile);
+        MaterialButton btnPickDeviceFile = view.findViewById(R.id.btnPickDeviceFile);
+        tvSelectedFileStatus = view.findViewById(R.id.tvSelectedFileStatus);
+        pbUploadStorage = view.findViewById(R.id.pbUploadStorage);
+        tvUploadStoragePercent = view.findViewById(R.id.tvUploadStoragePercent);
+
+        selectedFileUri = null;
+        selectedFileName = "";
+
+        btnPickDeviceFile.setOnClickListener(v -> filePickerLauncher.launch("*/*"));
+
         rgResourceType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbTypeCode) {
                 tilFileUrl.setVisibility(View.GONE);
                 tilFileLang.setVisibility(View.VISIBLE);
                 tilFileSnippet.setVisibility(View.VISIBLE);
+                layoutDeviceFile.setVisibility(View.GONE);
+            } else if (checkedId == R.id.rbTypeDeviceFile) {
+                tilFileUrl.setVisibility(View.GONE);
+                tilFileLang.setVisibility(View.GONE);
+                tilFileSnippet.setVisibility(View.GONE);
+                layoutDeviceFile.setVisibility(View.VISIBLE);
             } else {
                 tilFileUrl.setVisibility(View.VISIBLE);
                 tilFileLang.setVisibility(View.GONE);
                 tilFileSnippet.setVisibility(View.GONE);
+                layoutDeviceFile.setVisibility(View.GONE);
             }
         });
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
             .setView(view)
-            .setPositiveButton("Share", (dialog, which) -> {
+            .setPositiveButton("Share", null)
+            .setNegativeButton("Cancel", null)
+            .create();
+
+        dialog.setOnShowListener(d -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 String name = etName.getText() != null ? etName.getText().toString().trim() : "";
+                int checkedType = rgResourceType.getCheckedRadioButtonId();
+
+                if (checkedType == R.id.rbTypeDeviceFile) {
+                    if (selectedFileUri == null) {
+                        Toast.makeText(this, "Please choose a file from your device", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (name.isEmpty()) {
+                        name = selectedFileName;
+                        etName.setText(name);
+                    }
+
+                    pbUploadStorage.setVisibility(View.VISIBLE);
+                    tvUploadStoragePercent.setVisibility(View.VISIBLE);
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+
+                    String uploader = FirebaseAuth.getInstance().getCurrentUser() != null && 
+                                      FirebaseAuth.getInstance().getCurrentUser().getEmail() != null ?
+                                      FirebaseAuth.getInstance().getCurrentUser().getEmail().split("@")[0] : "Member";
+
+                    viewModel.uploadProjectFile(projectId, selectedFileUri, name, uploader, new ProjectRepository.StorageUploadCallback() {
+                        @Override
+                        public void onProgress(int percent) {
+                            runOnUiThread(() -> {
+                                pbUploadStorage.setProgress(percent);
+                                tvUploadStoragePercent.setText("Uploading: " + percent + "%");
+                            });
+                        }
+
+                        @Override
+                        public void onSuccess(FileReference fileReference) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(ProjectDetailsActivity.this, "File uploaded to Storage successfully!", Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                            });
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            runOnUiThread(() -> {
+                                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                                pbUploadStorage.setVisibility(View.GONE);
+                                tvUploadStoragePercent.setVisibility(View.GONE);
+                                Toast.makeText(ProjectDetailsActivity.this, "Upload failed: " + message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                    return;
+                }
+
                 if (name.isEmpty()) {
                     Toast.makeText(this, "Title is required", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                int checkedType = rgResourceType.getCheckedRadioButtonId();
                 String type = "LINK";
                 String url = etUrl.getText() != null ? etUrl.getText().toString().trim() : "";
                 String snippet = "";
@@ -703,8 +834,148 @@ public class ProjectDetailsActivity extends AppCompatActivity {
                     null, projectId, name, url, type, snippet, lang, uploader, System.currentTimeMillis()
                 );
                 viewModel.addFileReference(projectId, ref);
+                dialog.dismiss();
+            });
+        });
+
+        dialog.show();
+    }
+
+    private String getFileNameFromUri(Uri uri) {
+        String name = "file_" + System.currentTimeMillis();
+        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex != -1) {
+                        name = cursor.getString(nameIndex);
+                    }
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        return name;
+    }
+
+    private void showLocationDialog() {
+        if (currentProject != null && currentProject.getVenueLocation() != null && !currentProject.getVenueLocation().isEmpty()) {
+            new AlertDialog.Builder(this)
+                .setTitle("📍 Project Meetup Venue")
+                .setMessage("Current Venue:\n" + currentProject.getVenueLocation() + 
+                    (currentProject.getLatitude() != 0 ? "\n\nCoordinates: " + currentProject.getLatitude() + ", " + currentProject.getLongitude() : ""))
+                .setPositiveButton("Open in Maps", (d, w) -> {
+                    String mapUriStr;
+                    if (currentProject.getLatitude() != 0 && currentProject.getLongitude() != 0) {
+                        mapUriStr = "geo:" + currentProject.getLatitude() + "," + currentProject.getLongitude() + "?q=" + Uri.encode(currentProject.getVenueLocation());
+                    } else {
+                        mapUriStr = "geo:0,0?q=" + Uri.encode(currentProject.getVenueLocation());
+                    }
+                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(mapUriStr));
+                    try {
+                        startActivity(mapIntent);
+                    } catch (Exception e) {
+                        Intent webMap = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(currentProject.getVenueLocation())));
+                        startActivity(webMap);
+                    }
+                })
+                .setNeutralButton("Update Venue", (d, w) -> promptForVenueInput())
+                .setNegativeButton("Close", null)
+                .show();
+        } else {
+            promptForVenueInput();
+        }
+    }
+
+    private void promptForVenueInput() {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("e.g. Innovation Lab Room 304, SIH Table 12");
+        input.setPadding(40, 30, 40, 30);
+
+        new AlertDialog.Builder(this)
+            .setTitle("📍 Tag Project Venue")
+            .setView(input)
+            .setPositiveButton("Save Venue", (d, w) -> {
+                String venue = input.getText().toString().trim();
+                if (!venue.isEmpty()) {
+                    viewModel.updateProjectLocation(projectId, venue, 0.0, 0.0);
+                }
             })
+            .setNeutralButton("Detect Current GPS", (d, w) -> checkAndRequestLocation())
             .setNegativeButton("Cancel", null)
             .show();
+    }
+
+    private void checkAndRequestLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            detectAndSaveLocation();
+        } else {
+            locationPermissionLauncher.launch(new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
+
+    private void detectAndSaveLocation() {
+        try {
+            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            Location location = null;
+            if (locationManager != null) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                }
+                if (location == null && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                }
+            }
+
+            if (location != null) {
+                double lat = location.getLatitude();
+                double lng = location.getLongitude();
+                String venueTag = "GPS: " + String.format(Locale.US, "%.4f, %.4f", lat, lng);
+                viewModel.updateProjectLocation(projectId, venueTag, lat, lng);
+                Toast.makeText(this, "Tagged project location: " + venueTag, Toast.LENGTH_SHORT).show();
+            } else {
+                viewModel.updateProjectLocation(projectId, "Campus Innovation Hub", 0.0, 0.0);
+                Toast.makeText(this, "Tagged project location: Campus Innovation Hub", Toast.LENGTH_SHORT).show();
+            }
+        } catch (SecurityException e) {
+            Toast.makeText(this, "Permission required to access device location", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareProjectSummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("🚀 *ProjectHub Agile Workspace*\n");
+        sb.append("📌 *Project:* ").append(projectTitle != null ? projectTitle : "Project").append("\n");
+        if (projectDesc != null && !projectDesc.isEmpty()) {
+            sb.append("📝 *Description:* ").append(projectDesc).append("\n");
+        }
+        sb.append("🔑 *Join Code:* ").append(projectCode != null ? projectCode : "").append("\n");
+        if (currentProject != null && currentProject.getVenueLocation() != null && !currentProject.getVenueLocation().isEmpty()) {
+            sb.append("📍 *Meetup Venue:* ").append(currentProject.getVenueLocation()).append("\n");
+        }
+        sb.append("\n📋 *Active Tasks (").append(allTasks.size()).append("):*\n");
+        for (int i = 0; i < Math.min(allTasks.size(), 5); i++) {
+            Task t = allTasks.get(i);
+            sb.append("• [").append(t.getIssueType() != null ? t.getIssueType() : "TASK").append("] ")
+              .append(t.getTitle()).append(" (").append(t.getStatus()).append(")\n");
+        }
+        if (allTasks.size() > 5) {
+            sb.append("• ...and ").append(allTasks.size() - 5).append(" more tasks\n");
+        }
+
+        String safeId = projectId != null ? projectId.replaceAll("[^a-zA-Z0-9]", "") : "room";
+        sb.append("\n📹 *Live Team Video Call Room:*\nhttps://meet.jit.si/ProjectHub_").append(safeId).append("\n");
+        sb.append("\n_Shared via ProjectHub Collaboration App_");
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "ProjectHub: " + projectTitle);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+        startActivity(Intent.createChooser(shareIntent, "Share Project with Teammates"));
     }
 }

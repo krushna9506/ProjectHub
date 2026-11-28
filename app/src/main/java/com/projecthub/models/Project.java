@@ -19,6 +19,9 @@ public class Project {
     private String lookingFor; // e.g. "Android Dev, UI/UX Designer"
     private String collegeDomain;
     private String githubRepoUrl;
+    private String venueLocation;
+    private double latitude;
+    private double longitude;
 
     public Project() {
         this.members = new HashMap<>();
@@ -42,6 +45,9 @@ public class Project {
         this.lookingFor = "";
         this.collegeDomain = "";
         this.githubRepoUrl = "";
+        this.venueLocation = "";
+        this.latitude = 0.0;
+        this.longitude = 0.0;
     }
 
     public String getProjectId() { return projectId; }
@@ -88,4 +94,13 @@ public class Project {
 
     public String getGithubRepoUrl() { return githubRepoUrl; }
     public void setGithubRepoUrl(String githubRepoUrl) { this.githubRepoUrl = githubRepoUrl; }
+
+    public String getVenueLocation() { return venueLocation; }
+    public void setVenueLocation(String venueLocation) { this.venueLocation = venueLocation; }
+
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
+
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
 }

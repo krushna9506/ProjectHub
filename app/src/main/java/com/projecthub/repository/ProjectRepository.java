@@ -1,5 +1,6 @@
 package com.projecthub.repository;
 
+import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
@@ -8,6 +9,9 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.projecthub.models.AppNotification;
 import com.projecthub.models.ChatMessage;
 import com.projecthub.models.FileReference;
@@ -16,15 +20,24 @@ import com.projecthub.models.Milestone;
 import com.projecthub.models.Project;
 import com.projecthub.models.Task;
 import com.projecthub.models.TaskComment;
+import com.projecthub.utils.NotificationHelper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ProjectRepository {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public interface OperationCallback {
         void onSuccess();
+        void onError(String message);
+    }
+
+    public interface StorageUploadCallback {
+        void onProgress(int percent);
+        void onSuccess(FileReference fileReference);
         void onError(String message);
     }
 
@@ -110,7 +123,13 @@ public class ProjectRepository {
         request.setRequestId(docRef.getId());
 
         docRef.set(request)
-            .addOnSuccessListener(aVoid -> callback.onSuccess())
+            .addOnSuccessListener(aVoid -> {
+                NotificationHelper.dispatchNotification(null, request.getLeadId(),
+                    "New Team Join Request",
+                    request.getApplicantName() + " requested to join " + (request.getProjectTitle() != null ? request.getProjectTitle() : "your project"),
+                    "JOIN_REQUEST", request.getProjectId(), request.getProjectTitle());
+                callback.onSuccess();
+            })
             .addOnFailureListener(e -> callback.onError("Failed to send request: " + e.getMessage()));
     }
 
@@ -151,6 +170,10 @@ public class ProjectRepository {
                     .addOnSuccessListener(aVoid2 -> {
                         db.collection("users").document(request.getApplicantId())
                             .update("joinedProjectIds", FieldValue.arrayUnion(request.getProjectId()));
+                        NotificationHelper.dispatchNotification(null, request.getApplicantId(),
+                            "Join Request Accepted 🎉",
+                            "You are now a member of " + (request.getProjectTitle() != null ? request.getProjectTitle() : "the project"),
+                            "JOIN_ACCEPTED", request.getProjectId(), request.getProjectTitle());
                         callback.onSuccess();
                     })
                     .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -375,6 +398,63 @@ public class ProjectRepository {
                         doc.getReference().delete();
                     }
                 }
+            });
+    }
+
+    public void uploadProjectFile(String projectId, Uri fileUri, String fileName, 
+                                  String uploadedByName, StorageUploadCallback callback) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        String uniqueName = System.currentTimeMillis() + "_" + (fileName != null ? fileName : "file");
+        StorageReference storageRef = storage.getReference()
+            .child("project_files")
+            .child(projectId)
+            .child(uniqueName);
+
+        UploadTask uploadTask = storageRef.putFile(fileUri);
+        uploadTask.addOnProgressListener(snapshot -> {
+            if (snapshot.getTotalByteCount() > 0) {
+                double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
+                if (callback != null) callback.onProgress((int) progress);
+            }
+        }).addOnSuccessListener(taskSnapshot -> {
+            storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                String url = downloadUri.toString();
+                String type = "DOCUMENT";
+                String lower = fileName != null ? fileName.toLowerCase() : "";
+                if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp")) {
+                    type = "IMAGE";
+                }
+                FileReference fileRef = new FileReference(null, projectId, fileName, url, type, uploadedByName, System.currentTimeMillis());
+                addFileReference(projectId, fileRef, new OperationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (callback != null) callback.onSuccess(fileRef);
+                    }
+                    @Override
+                    public void onError(String message) {
+                        if (callback != null) callback.onError(message);
+                    }
+                });
+            }).addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
+            });
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError(e.getMessage());
+        });
+    }
+
+    public void updateProjectLocation(String projectId, String venue, double lat, double lng, OperationCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("venueLocation", venue != null ? venue : "");
+        updates.put("latitude", lat);
+        updates.put("longitude", lng);
+
+        db.collection("projects").document(projectId).update(updates)
+            .addOnSuccessListener(aVoid -> {
+                if (callback != null) callback.onSuccess();
+            })
+            .addOnFailureListener(e -> {
+                if (callback != null) callback.onError(e.getMessage());
             });
     }
 

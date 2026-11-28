@@ -26,22 +26,29 @@
             android:id="@+id/rbTypeLink"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Link / File"
+            android:text="Link"
             android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbTypeDeviceFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Upload File"
+            android:layout_marginStart="6dp" />
 
         <RadioButton
             android:id="@+id/rbTypeCode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Code Snippet"
-            android:layout_marginStart="8dp" />
+            android:text="Code"
+            android:layout_marginStart="6dp" />
 
         <RadioButton
             android:id="@+id/rbTypeGitHub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="GitHub"
-            android:layout_marginStart="8dp" />
+            android:layout_marginStart="6dp" />
     </RadioGroup>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -107,5 +114,51 @@
             android:inputType="textMultiLine"
             android:minLines="3" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Device File Picker Section -->
+    <LinearLayout
+        android:id="@+id/layoutDeviceFile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="10dp"
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickDeviceFile"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="📁 Choose Document / Image"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvSelectedFileStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:text="No file selected yet" />
+
+        <ProgressBar
+            android:id="@+id/pbUploadStorage"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="8dp"
+            android:max="100"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvUploadStoragePercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="11sp"
+            android:textColor="@color/primary"
+            android:visibility="gone"
+            android:text="Uploading: 0%" />
+    </LinearLayout>
 
 </LinearLayout>

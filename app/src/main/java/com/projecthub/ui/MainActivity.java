@@ -174,6 +174,16 @@ public class MainActivity extends AppCompatActivity {
             if (unread > 0) {
                 tvNotificationBadge.setVisibility(View.VISIBLE);
                 tvNotificationBadge.setText(unread > 9 ? "9+" : String.valueOf(unread));
+                if (!list.isEmpty() && !list.get(0).isRead()) {
+                    AppNotification top = list.get(0);
+                    NotificationHelper.showSystemNotification(
+                        MainActivity.this,
+                        top.getTitle() != null ? top.getTitle() : "ProjectHub Alert",
+                        top.getMessage() != null ? top.getMessage() : "New project activity",
+                        top.getProjectId(),
+                        top.getType()
+                    );
+                }
             } else {
                 tvNotificationBadge.setVisibility(View.GONE);
             }
